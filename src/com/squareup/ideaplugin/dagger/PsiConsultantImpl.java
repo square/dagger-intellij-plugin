@@ -1,38 +1,33 @@
 package com.squareup.ideaplugin.dagger;
 
 import com.intellij.psi.PsiAnnotation;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiClassType;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifierList;
+import com.intellij.psi.PsiModifierListOwner;
 
 public class PsiConsultantImpl {
 
-  static PsiAnnotation findInjectAnnotation(PsiField field) {
-    PsiModifierList modifiers = field.getModifierList();
-    if (modifiers != null) {
-      PsiAnnotation[] annotations = modifiers.getAnnotations();
-      for (PsiAnnotation annotation : annotations) {
-        if (annotation.getText().matches("@Inject")) {
-          return annotation;
+  static PsiAnnotation findAnnotation(PsiElement element, String annotationName) {
+    if (element instanceof PsiModifierListOwner) {
+      PsiModifierListOwner listOwner = (PsiModifierListOwner) element;
+      PsiModifierList modifierList = listOwner.getModifierList();
+      if (modifierList != null) {
+        for (PsiAnnotation psiAnnotation : modifierList.getAnnotations()) {
+          if (annotationName.equals(psiAnnotation.getQualifiedName())) {
+            return psiAnnotation;
+          }
         }
       }
     }
     return null;
   }
 
-  static PsiAnnotation findAnnotationOnMethod(PsiMethod psiMethod, String annotationName) {
-    PsiModifierList modifierList = psiMethod.getModifierList();
-    for (PsiAnnotation psiAnnotation : modifierList.getAnnotations()) {
-      if (annotationName.equals(psiAnnotation.getQualifiedName())) {
-        return psiAnnotation;
-      }
-    }
-    return null;
-  }
-
-  static boolean hasAnnotation(PsiMethod psiMethod, String annotationName) {
-    return findAnnotationOnMethod(psiMethod, annotationName) != null;
+  static boolean hasAnnotation(PsiElement element, String annotationName) {
+    return findAnnotation(element, annotationName) != null;
   }
 
   static PsiMethod findMethod(PsiElement element) {
@@ -42,6 +37,29 @@ public class PsiConsultantImpl {
       return (PsiMethod) element;
     } else {
       return findMethod(element.getParent());
+    }
+  }
+
+  public static PsiClass getClassFromField(PsiField psiField) {
+    PsiElement context = psiField.getContext();
+    return null;
+  }
+
+  public static PsiClass getReturnClassFromMethod(PsiMethod psiMethod) {
+    PsiClassType returnType = ((PsiClassType) psiMethod.getReturnType());
+    if (returnType != null) {
+      return returnType.resolve();
+    }
+    return null;
+  }
+
+  public static PsiField findField(PsiElement element) {
+    if (element == null) {
+      return null;
+    } else if (element instanceof PsiField) {
+      return (PsiField) element;
+    } else {
+      return findField(element.getParent());
     }
   }
 }
