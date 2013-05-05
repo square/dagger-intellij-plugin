@@ -41,8 +41,7 @@ public class PsiConsultantImpl {
   }
 
   public static PsiClass getClassFromField(PsiField psiField) {
-    PsiElement context = psiField.getContext();
-    return null;
+    return ((PsiClassType) psiField.getType()).resolve();
   }
 
   public static PsiClass getReturnClassFromMethod(PsiMethod psiMethod) {

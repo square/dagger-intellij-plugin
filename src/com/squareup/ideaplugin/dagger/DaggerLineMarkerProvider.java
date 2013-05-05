@@ -27,6 +27,16 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
   private static final String INJECT_CLASS_NAME = "javax.inject.Inject";
   private static final int MAX_USAGES = 100;
 
+  private static final Decider PROVIDERS = new Decider() {
+    @Override public boolean shouldShow(Usage usage) {
+      PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
+      PsiMethod psimethod = PsiConsultantImpl.findMethod(element);
+      if (psimethod != null && PsiConsultantImpl.hasAnnotation(psimethod, PROVIDES_CLASS_NAME)) {
+        return true;
+      }
+      return false;
+    }
+  };
   private static final Decider INJECT_FIELDS = new Decider() {
     @Override public boolean shouldShow(Usage usage) {
       PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
@@ -40,6 +50,7 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
   private static final GutterIconNavigationHandler<PsiElement> SHOW_INJECTORS =
       new GutterIconNavigationHandler<PsiElement>() {
         @Override public void navigate(MouseEvent mouseEvent, PsiElement psiElement) {
+          // @Provides -> @Inject
           if (psiElement instanceof PsiMethod) {
             PsiClass psiClass = PsiConsultantImpl.getReturnClassFromMethod((PsiMethod) psiElement);
             new ShowUsagesAction(INJECT_FIELDS).startFindUsages(psiClass,
@@ -50,6 +61,12 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
   private static final GutterIconNavigationHandler<PsiElement> SHOW_PROVIDERS =
       new GutterIconNavigationHandler<PsiElement>() {
         @Override public void navigate(MouseEvent mouseEvent, PsiElement psiElement) {
+          // @Inject -> @Provides
+          if (psiElement instanceof PsiField) {
+            PsiClass psiClass = PsiConsultantImpl.getClassFromField((PsiField) psiElement);
+            new ShowUsagesAction(PROVIDERS).startFindUsages(psiClass, new RelativePoint(mouseEvent),
+                PsiUtilBase.findEditor(psiClass), MAX_USAGES);
+          }
         }
       };
 
