@@ -74,6 +74,7 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
           if (psiElement instanceof PsiField) {
             PsiField psiField = (PsiField) psiElement;
             PsiClass psiClass = PsiConsultantImpl.getClassFromField(psiField);
+            // TODO if Lazy<Foo> or Provider<Foo> extract Foo as the interesting type
             new ShowUsagesAction(PROVIDERS).startFindUsages(psiClass, new RelativePoint(mouseEvent),
                 PsiUtilBase.findEditor(psiClass), MAX_USAGES);
           }
