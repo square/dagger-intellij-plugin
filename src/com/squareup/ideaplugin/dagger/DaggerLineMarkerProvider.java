@@ -21,6 +21,7 @@ import com.intellij.ui.awt.RelativePoint;
 import com.intellij.usages.Usage;
 import com.intellij.usages.UsageInfo2UsageAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.swing.Icon;
@@ -45,11 +46,16 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
       return psimethod != null && PsiConsultantImpl.hasAnnotation(psimethod, CLASS_PROVIDES);
     }
   };
-  private static final Decider INJECT_FIELDS = new Decider() {
+  private static final Decider INJECTORS = new Decider() {
     @Override public boolean shouldShow(Usage usage) {
       PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
       PsiField field = PsiConsultantImpl.findField(element);
-      return field != null && PsiConsultantImpl.hasAnnotation(field, CLASS_INJECT);
+      if (field != null && PsiConsultantImpl.hasAnnotation(field, CLASS_INJECT)) {
+        return true;
+      }
+
+      PsiMethod method = PsiConsultantImpl.findMethod(element);
+      return method != null && PsiConsultantImpl.hasAnnotation(method, CLASS_INJECT);
     }
   };
 
@@ -58,15 +64,23 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
       new GutterIconNavigationHandler<PsiElement>() {
         @Override public void navigate(MouseEvent mouseEvent, PsiElement psiElement) {
           if (!(psiElement instanceof PsiMethod)) {
-            throw new IllegalStateException("Called with non-method " + psiElement);
+            throw new IllegalStateException("Called with non-method: " + psiElement);
           }
           PsiMethod psiMethod = (PsiMethod) psiElement;
+          if (!psiMethod.isConstructor()) {
+            throw new IllegalStateException("Called with non-constructor: " + psiElement);
+          }
 
-          // Get a list of the types in the constructor.
           PsiParameter[] parameters = psiMethod.getParameterList().getParameters();
+          List<PsiClass> psiClassList = new ArrayList<PsiClass>();
+          for (PsiParameter parameter : parameters) {
+            psiClassList.add(PsiConsultantImpl.getClass(parameter));
+          }
 
-          // TODO show dropdown of parameters
-          // TODO   when type is clicked, use inject_to_provides
+          PsiClass firstType = psiClassList.get(0);
+          //TODO(kiran): figure out how to use multiple classes in find usages
+          new ShowUsagesAction(PROVIDERS).startFindUsages(firstType, new RelativePoint(mouseEvent),
+              PsiUtilBase.findEditor(firstType), MAX_USAGES);
         }
       };
 
@@ -77,10 +91,9 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
           if (!(psiElement instanceof PsiMethod)) {
             throw new IllegalStateException("Called with non-method: " + psiElement);
           }
-
           PsiClass psiClass = PsiConsultantImpl.getReturnClassFromMethod((PsiMethod) psiElement);
-          new ShowUsagesAction(INJECT_FIELDS).startFindUsages(psiClass,
-              new RelativePoint(mouseEvent), PsiUtilBase.findEditor(psiClass), MAX_USAGES);
+          new ShowUsagesAction(INJECTORS).startFindUsages(psiClass, new RelativePoint(mouseEvent),
+              PsiUtilBase.findEditor(psiClass), MAX_USAGES);
         }
       };
 
@@ -92,8 +105,9 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
             throw new IllegalStateException("Called with non-field element: " + psiElement);
           }
           PsiField psiField = (PsiField) psiElement;
+
           PsiType psiFieldType = psiField.getType();
-          PsiClass psiClass = PsiConsultantImpl.getClassFromField(psiField);
+          PsiClass psiClass = PsiConsultantImpl.getClass(psiField);
 
           if (psiFieldType instanceof PsiClassType) {
             PsiClassType psiClassType = (PsiClassType) psiFieldType;
@@ -124,7 +138,8 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
         }
       };
 
-  @Nullable @Override public LineMarkerInfo getLineMarkerInfo(@NotNull final PsiElement element) {
+  @Nullable @Override
+  public LineMarkerInfo getLineMarkerInfo(@NotNull final PsiElement element) {
     if (element instanceof PsiMethod) {
       PsiMethod methodElement = (PsiMethod) element;
 
