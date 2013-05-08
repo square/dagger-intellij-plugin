@@ -8,6 +8,8 @@ import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifierList;
 import com.intellij.psi.PsiModifierListOwner;
+import com.intellij.psi.PsiType;
+import com.intellij.psi.PsiVariable;
 
 public class PsiConsultantImpl {
 
@@ -38,6 +40,17 @@ public class PsiConsultantImpl {
     } else {
       return findMethod(element.getParent());
     }
+  }
+
+  public static PsiClass getClass(PsiElement psiElement) {
+    if (psiElement instanceof PsiVariable) {
+      PsiVariable variable = (PsiVariable) psiElement;
+      PsiType type = variable.getType();
+      if (type instanceof PsiClassType) {
+        return ((PsiClassType) type).resolve();
+      }
+    }
+    return null;
   }
 
   public static PsiClass getClassFromField(PsiField psiField) {

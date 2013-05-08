@@ -9,11 +9,13 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiIdentifier;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiParameter;
 import com.intellij.psi.util.PsiUtilBase;
 import com.intellij.ui.awt.RelativePoint;
 import com.intellij.usages.Usage;
 import com.intellij.usages.UsageInfo2UsageAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import javax.swing.Icon;
@@ -38,11 +40,16 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
       return psimethod != null && PsiConsultantImpl.hasAnnotation(psimethod, CLASS_PROVIDES);
     }
   };
-  private static final Decider INJECT_FIELDS = new Decider() {
+  private static final Decider INJECTORS = new Decider() {
     @Override public boolean shouldShow(Usage usage) {
       PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
       PsiField field = PsiConsultantImpl.findField(element);
-      return field != null && PsiConsultantImpl.hasAnnotation(field, CLASS_INJECT);
+      if (field != null && PsiConsultantImpl.hasAnnotation(field, CLASS_INJECT)) {
+        return true;
+      }
+
+      PsiMethod method = PsiConsultantImpl.findMethod(element);
+      return method != null && PsiConsultantImpl.hasAnnotation(method, CLASS_INJECT);
     }
   };
 
@@ -50,8 +57,21 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
   private static final GutterIconNavigationHandler<PsiElement> NAV_HANDLER_CTOR_INJECT_LIST =
       new GutterIconNavigationHandler<PsiElement>() {
         @Override public void navigate(MouseEvent mouseEvent, PsiElement psiElement) {
-          // TODO list types in the constructor
-          // TODO   when type is clicked, use inject_to_provides
+          if (psiElement instanceof PsiMethod) {
+            PsiMethod psiMethod = (PsiMethod) psiElement;
+            if (psiMethod.isConstructor()) {
+              PsiParameter[] parameters = psiMethod.getParameterList().getParameters();
+              List<PsiClass> psiClassList = new ArrayList<PsiClass>();
+              for (PsiParameter parameter : parameters) {
+                psiClassList.add(PsiConsultantImpl.getClass(parameter));
+              }
+
+              PsiClass firstType = psiClassList.get(0);
+              //TODO(kiran): figure out how to use multiple classes in find usages
+              new ShowUsagesAction(PROVIDERS).startFindUsages(firstType,
+                  new RelativePoint(mouseEvent), PsiUtilBase.findEditor(firstType), MAX_USAGES);
+            }
+          }
         }
       };
 
@@ -61,7 +81,7 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
         @Override public void navigate(MouseEvent mouseEvent, PsiElement psiElement) {
           if (psiElement instanceof PsiMethod) {
             PsiClass psiClass = PsiConsultantImpl.getReturnClassFromMethod((PsiMethod) psiElement);
-            new ShowUsagesAction(INJECT_FIELDS).startFindUsages(psiClass,
+            new ShowUsagesAction(INJECTORS).startFindUsages(psiClass,
                 new RelativePoint(mouseEvent), PsiUtilBase.findEditor(psiClass), MAX_USAGES);
           }
         }
