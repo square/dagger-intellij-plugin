@@ -53,10 +53,6 @@ public class PsiConsultantImpl {
     return null;
   }
 
-  public static PsiClass getClassFromField(PsiField psiField) {
-    return ((PsiClassType) psiField.getType()).resolve();
-  }
-
   public static PsiClass getReturnClassFromMethod(PsiMethod psiMethod) {
     PsiClassType returnType = ((PsiClassType) psiMethod.getReturnType());
     if (returnType != null) {

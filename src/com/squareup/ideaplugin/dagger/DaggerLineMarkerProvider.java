@@ -93,7 +93,7 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
         @Override public void navigate(MouseEvent mouseEvent, PsiElement psiElement) {
           if (psiElement instanceof PsiField) {
             PsiField psiField = (PsiField) psiElement;
-            PsiClass psiClass = PsiConsultantImpl.getClassFromField(psiField);
+            PsiClass psiClass = PsiConsultantImpl.getClass(psiField);
             // TODO if Lazy<Foo> or Provider<Foo> extract Foo as the interesting type
             new ShowUsagesAction(PROVIDERS).startFindUsages(psiClass, new RelativePoint(mouseEvent),
                 PsiUtilBase.findEditor(psiClass), MAX_USAGES);
