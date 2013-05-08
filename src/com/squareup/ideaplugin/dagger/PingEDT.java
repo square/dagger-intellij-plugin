@@ -23,12 +23,14 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Runs activity in the EDT.
- * To schedule activity, call {@link #ping()}. It sets the flag telling that the activity should be run. Once it has run, the flag is cleared.
+ * To schedule activity, call {@link #ping()}. It sets the flag telling that the activity should be
+ * run. Once it has run, the flag is cleared.
  * So you can call ping() several times, but the activity will be executed only once.
- * If activity took more than {@code maxUnitOfWorkThresholdMs} ms, it will yield till the next invokeLater.
+ * If activity took more than {@code maxUnitOfWorkThresholdMs} ms, it will yield till the next
+ * invokeLater.
  */
 class PingEDT {
-  @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
+  @SuppressWarnings({ "FieldCanBeLocal", "UnusedDeclaration" })
   private final String myName;
   private final Runnable pingAction;
   private volatile boolean stopped;
@@ -51,8 +53,7 @@ class PingEDT {
       while (true) {
         if (processNext()) {
           processed++;
-        }
-        else {
+        } else {
           break;
         }
         long finish = System.currentTimeMillis();

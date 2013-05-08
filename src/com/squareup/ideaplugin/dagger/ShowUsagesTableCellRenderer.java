@@ -46,10 +46,8 @@ import javax.swing.SwingConstants;
 import javax.swing.table.TableCellRenderer;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * @author cdr
- */
-class  ShowUsagesTableCellRenderer implements TableCellRenderer {
+/** @author cdr */
+class ShowUsagesTableCellRenderer implements TableCellRenderer {
 
   private final UsageViewImpl myUsageView;
 
@@ -58,12 +56,13 @@ class  ShowUsagesTableCellRenderer implements TableCellRenderer {
   }
 
   @Override
-  public Component getTableCellRendererComponent(JTable list, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-    UsageNode usageNode = value instanceof UsageNode ? (UsageNode)value : null;
+  public Component getTableCellRendererComponent(JTable list, Object value, boolean isSelected,
+      boolean hasFocus, int row, int column) {
+    UsageNode usageNode = value instanceof UsageNode ? (UsageNode) value : null;
 
     Usage usage = usageNode == null ? null : usageNode.getUsage();
 
-    JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0,0));
+    JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
     Color fileBgColor = getBackgroundColor(isSelected, usage);
     final Color bg = UIUtil.getListSelectionBackground();
     final Color fg = UIUtil.getListSelectionForeground();
@@ -73,26 +72,25 @@ class  ShowUsagesTableCellRenderer implements TableCellRenderer {
     if (usage == null || usageNode instanceof ShowUsagesAction.StringNode) {
       panel.setLayout(new BorderLayout());
       if (column == 0) {
-        panel.add(new JLabel("<html><body><b>" + value + "</b></body></html>", SwingConstants.CENTER));
+        panel.add(
+            new JLabel("<html><body><b>" + value + "</b></body></html>", SwingConstants.CENTER));
       }
       return panel;
     }
 
-
     SimpleColoredComponent textChunks = new SimpleColoredComponent();
-    textChunks.setIpad(new Insets(0,0,0,0));
+    textChunks.setIpad(new Insets(0, 0, 0, 0));
     textChunks.setBorder(null);
 
     if (column == 0) {
-      GroupNode parent = (GroupNode)usageNode.getParent();
+      GroupNode parent = (GroupNode) usageNode.getParent();
       appendGroupText(parent, panel, fileBgColor);
       if (usage == ShowUsagesAction.MORE_USAGES_SEPARATOR) {
         textChunks.append("...<");
         textChunks.append("more usages", SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES);
         textChunks.append(">...");
       }
-    }
-    else if (usage != ShowUsagesAction.MORE_USAGES_SEPARATOR) {
+    } else if (usage != ShowUsagesAction.MORE_USAGES_SEPARATOR) {
       UsagePresentation presentation = usage.getPresentation();
       TextChunk[] text = presentation.getText();
 
@@ -100,22 +98,22 @@ class  ShowUsagesTableCellRenderer implements TableCellRenderer {
         final Icon icon = presentation.getIcon();
         textChunks.setIcon(icon == null ? EmptyIcon.ICON_16 : icon);
         if (text.length != 0) {
-          SimpleTextAttributes attributes = isSelected ?
-              new SimpleTextAttributes(bg, fg, fg, SimpleTextAttributes.STYLE_ITALIC) :
-              deriveAttributesWithColor(text[0].getSimpleAttributesIgnoreBackground(), fileBgColor);
+          SimpleTextAttributes attributes =
+              isSelected ? new SimpleTextAttributes(bg, fg, fg, SimpleTextAttributes.STYLE_ITALIC)
+                  : deriveAttributesWithColor(text[0].getSimpleAttributesIgnoreBackground(),
+                      fileBgColor);
           textChunks.append(text[0].getText(), attributes);
         }
-      }
-      else if (column == 2) {
+      } else if (column == 2) {
         for (int i = 1; i < text.length; i++) {
           TextChunk textChunk = text[i];
           final SimpleTextAttributes attrs = textChunk.getSimpleAttributesIgnoreBackground();
-          SimpleTextAttributes attributes = isSelected ?
-              new SimpleTextAttributes(bg, fg, fg, attrs.getStyle()) : deriveAttributesWithColor(attrs, fileBgColor);
+          SimpleTextAttributes attributes =
+              isSelected ? new SimpleTextAttributes(bg, fg, fg, attrs.getStyle())
+                  : deriveAttributesWithColor(attrs, fileBgColor);
           textChunks.append(textChunk.getText(), attributes);
         }
-      }
-      else {
+      } else {
         assert false : column;
       }
     }
@@ -123,9 +121,10 @@ class  ShowUsagesTableCellRenderer implements TableCellRenderer {
     return panel;
   }
 
-  private static SimpleTextAttributes deriveAttributesWithColor(SimpleTextAttributes attributes, Color fileBgColor) {
+  private static SimpleTextAttributes deriveAttributesWithColor(SimpleTextAttributes attributes,
+      Color fileBgColor) {
     if (fileBgColor != null) {
-      attributes = attributes.derive(-1,null, fileBgColor,null);
+      attributes = attributes.derive(-1, null, fileBgColor, null);
     }
     return attributes;
   }
@@ -134,9 +133,9 @@ class  ShowUsagesTableCellRenderer implements TableCellRenderer {
     Color fileBgColor = null;
     if (isSelected) {
       fileBgColor = UIUtil.getListSelectionBackground();
-    }
-    else {
-      VirtualFile virtualFile = usage instanceof UsageInFile ? ((UsageInFile)usage).getFile() : null;
+    } else {
+      VirtualFile virtualFile =
+          usage instanceof UsageInFile ? ((UsageInFile) usage).getFile() : null;
       if (virtualFile != null) {
         Project project = myUsageView.getProject();
         PsiFile psiFile = PsiManager.getInstance(project).findFile(virtualFile);
@@ -152,16 +151,17 @@ class  ShowUsagesTableCellRenderer implements TableCellRenderer {
   private void appendGroupText(final GroupNode node, JPanel panel, Color fileBgColor) {
     UsageGroup group = node == null ? null : node.getGroup();
     if (group == null) return;
-    GroupNode parentGroup = (GroupNode)node.getParent();
+    GroupNode parentGroup = (GroupNode) node.getParent();
     appendGroupText(parentGroup, panel, fileBgColor);
     if (node.canNavigateToSource()) {
       SimpleColoredComponent renderer = new SimpleColoredComponent();
 
       renderer.setIcon(group.getIcon(false));
-      SimpleTextAttributes attributes = deriveAttributesWithColor(SimpleTextAttributes.REGULAR_ATTRIBUTES, fileBgColor);
+      SimpleTextAttributes attributes =
+          deriveAttributesWithColor(SimpleTextAttributes.REGULAR_ATTRIBUTES, fileBgColor);
       renderer.append(group.getText(myUsageView), attributes);
       renderer.append(" ", attributes);
-      renderer.setIpad(new Insets(0,0,0,0));
+      renderer.setIpad(new Insets(0, 0, 0, 0));
       renderer.setBorder(null);
       panel.add(renderer);
     }
