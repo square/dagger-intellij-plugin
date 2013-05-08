@@ -129,7 +129,8 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
                   .values()
                   .iterator()
                   .next();
-              // TODO convert genericType to its PsiClass and store in psiClass
+              // Convert genericType to its PsiClass and store in psiClass
+              psiClass = PsiConsultantImpl.getClass(genericType);
             }
           }
 

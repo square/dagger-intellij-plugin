@@ -45,10 +45,14 @@ public class PsiConsultantImpl {
   public static PsiClass getClass(PsiElement psiElement) {
     if (psiElement instanceof PsiVariable) {
       PsiVariable variable = (PsiVariable) psiElement;
-      PsiType type = variable.getType();
-      if (type instanceof PsiClassType) {
-        return ((PsiClassType) type).resolve();
-      }
+      return getClass(variable.getType());
+    }
+    return null;
+  }
+
+  public static PsiClass getClass(PsiType psiType) {
+    if (psiType instanceof PsiClassType) {
+      return ((PsiClassType) psiType).resolve();
     }
     return null;
   }
