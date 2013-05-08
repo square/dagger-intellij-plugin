@@ -32,7 +32,7 @@ import static com.intellij.codeHighlighting.Pass.UPDATE_ALL;
 import static com.intellij.openapi.editor.markup.GutterIconRenderer.Alignment.LEFT;
 
 public class DaggerLineMarkerProvider implements LineMarkerProvider {
-  private static final Icon ICON = IconLoader.getIcon("/icons/dagger-small.png");
+  private static final Icon ICON = IconLoader.getIcon("/icons/dagger.png");
   private static final String CLASS_PROVIDES = "dagger.Provides";
   private static final String CLASS_LAZY = "dagger.Lazy";
   private static final String CLASS_PROVIDER = "javax.inject.Provider";
