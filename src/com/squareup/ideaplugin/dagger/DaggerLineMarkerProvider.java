@@ -9,6 +9,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiIdentifier;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiTypeElement;
 import com.intellij.psi.util.PsiUtilBase;
 import com.intellij.ui.awt.RelativePoint;
 import com.intellij.usages.Usage;
@@ -84,31 +85,30 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
   @Nullable @Override public LineMarkerInfo getLineMarkerInfo(@NotNull final PsiElement element) {
     if (element instanceof PsiMethod) {
       PsiMethod methodElement = (PsiMethod) element;
-      PsiIdentifier nameIdentifier = methodElement.getNameIdentifier();
 
       // @Provides
       if (PsiConsultantImpl.hasAnnotation(element, CLASS_PROVIDES)) {
-        if (nameIdentifier != null) {
-          return new LineMarkerInfo<PsiElement>(element, nameIdentifier.getTextRange(), ICON,
+        PsiTypeElement returnTypeElement = methodElement.getReturnTypeElement();
+        if (returnTypeElement != null) {
+          return new LineMarkerInfo<PsiElement>(element, returnTypeElement.getTextRange(), ICON,
               UPDATE_ALL, null, NAV_HANDLER_PROVIDES_TO_INJECT, LEFT);
         }
-        // TODO what here?
       }
       // Constructor injection.
       if (methodElement.isConstructor() && PsiConsultantImpl.hasAnnotation(element, CLASS_INJECT)) {
+        PsiIdentifier nameIdentifier = methodElement.getNameIdentifier();
         if (nameIdentifier != null) {
           return new LineMarkerInfo<PsiElement>(element, nameIdentifier.getTextRange(), ICON,
               UPDATE_ALL, null, NAV_HANDLER_CTOR_INJECT_LIST, LEFT);
         }
-        // TODO what here?
       }
     } else if (element instanceof PsiField) {
       PsiField fieldElement = (PsiField) element;
-      PsiIdentifier nameIdentifier = fieldElement.getNameIdentifier();
+      PsiTypeElement typeElement = fieldElement.getTypeElement();
 
       // Field injection.
-      if (PsiConsultantImpl.hasAnnotation(element, CLASS_INJECT)) {
-        return new LineMarkerInfo<PsiElement>(element, nameIdentifier.getTextRange(), ICON,
+      if (PsiConsultantImpl.hasAnnotation(element, CLASS_INJECT) && typeElement != null) {
+        return new LineMarkerInfo<PsiElement>(element, typeElement.getTextRange(), ICON,
             UPDATE_ALL, null, NAV_HANDLER_INJECT_TO_PROVIDES, LEFT);
       }
     }
