@@ -62,7 +62,7 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
   // @Inject Foo(Bar bar) --> Type list
   private static final GutterIconNavigationHandler<PsiElement> NAV_HANDLER_CTOR_INJECT_LIST =
       new GutterIconNavigationHandler<PsiElement>() {
-        @Override public void navigate(MouseEvent mouseEvent, PsiElement psiElement) {
+        @Override public void navigate(final MouseEvent mouseEvent, PsiElement psiElement) {
           if (!(psiElement instanceof PsiMethod)) {
             throw new IllegalStateException("Called with non-method: " + psiElement);
           }
@@ -77,8 +77,19 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
             psiClassList.add(PsiConsultantImpl.getClass(parameter));
           }
 
-          PsiClass firstType = psiClassList.get(0);
-          //TODO(kiran): figure out how to use multiple classes in find usages
+          if (psiClassList.size() > 1) {
+            new PickTypeAction().startPickTypes(new RelativePoint(mouseEvent), psiClassList,
+                new PickTypeAction.Callback() {
+                  @Override public void onClassChosen(PsiClass clazz) {
+                    showUsages(mouseEvent, clazz);
+                  }
+                });
+          } else {
+            showUsages(mouseEvent, psiClassList.get(0));
+          }
+        }
+
+        private void showUsages(MouseEvent mouseEvent, PsiClass firstType) {
           new ShowUsagesAction(PROVIDERS).startFindUsages(firstType, new RelativePoint(mouseEvent),
               PsiUtilBase.findEditor(firstType), MAX_USAGES);
         }
