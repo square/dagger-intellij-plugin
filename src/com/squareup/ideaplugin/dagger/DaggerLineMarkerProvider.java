@@ -18,8 +18,6 @@ import com.intellij.psi.PsiTypeElement;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiUtilBase;
 import com.intellij.ui.awt.RelativePoint;
-import com.intellij.usages.Usage;
-import com.intellij.usages.UsageInfo2UsageAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,32 +30,13 @@ import static com.intellij.codeHighlighting.Pass.UPDATE_ALL;
 import static com.intellij.openapi.editor.markup.GutterIconRenderer.Alignment.LEFT;
 
 public class DaggerLineMarkerProvider implements LineMarkerProvider {
+  public static final String CLASS_INJECT = "javax.inject.Inject";
+  public static final String CLASS_LAZY = "dagger.Lazy";
+  public static final String CLASS_PROVIDER = "javax.inject.Provider";
+  public static final String CLASS_PROVIDES = "dagger.Provides";
+
   private static final Icon ICON = IconLoader.getIcon("/icons/dagger.png");
-  private static final String CLASS_PROVIDES = "dagger.Provides";
-  private static final String CLASS_LAZY = "dagger.Lazy";
-  private static final String CLASS_PROVIDER = "javax.inject.Provider";
-  private static final String CLASS_INJECT = "javax.inject.Inject";
   private static final int MAX_USAGES = 100;
-
-  private static final Decider PROVIDERS = new Decider() {
-    @Override public boolean shouldShow(Usage usage) {
-      PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
-      PsiMethod psimethod = PsiConsultantImpl.findMethod(element);
-      return psimethod != null && PsiConsultantImpl.hasAnnotation(psimethod, CLASS_PROVIDES);
-    }
-  };
-  private static final Decider INJECTORS = new Decider() {
-    @Override public boolean shouldShow(Usage usage) {
-      PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
-      PsiField field = PsiConsultantImpl.findField(element);
-      if (field != null && PsiConsultantImpl.hasAnnotation(field, CLASS_INJECT)) {
-        return true;
-      }
-
-      PsiMethod method = PsiConsultantImpl.findMethod(element);
-      return method != null && PsiConsultantImpl.hasAnnotation(method, CLASS_INJECT);
-    }
-  };
 
   // @Inject Foo(Bar bar) --> Type list
   private static final GutterIconNavigationHandler<PsiElement> NAV_HANDLER_CTOR_INJECT_LIST =
@@ -90,8 +69,8 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
         }
 
         private void showUsages(MouseEvent mouseEvent, PsiClass firstType) {
-          new ShowUsagesAction(PROVIDERS).startFindUsages(firstType, new RelativePoint(mouseEvent),
-              PsiUtilBase.findEditor(firstType), MAX_USAGES);
+          new ShowUsagesAction(Decider.PROVIDERS).startFindUsages(firstType,
+              new RelativePoint(mouseEvent), PsiUtilBase.findEditor(firstType), MAX_USAGES);
         }
       };
 
@@ -103,8 +82,8 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
             throw new IllegalStateException("Called with non-method: " + psiElement);
           }
           PsiClass psiClass = PsiConsultantImpl.getReturnClassFromMethod((PsiMethod) psiElement);
-          new ShowUsagesAction(INJECTORS).startFindUsages(psiClass, new RelativePoint(mouseEvent),
-              PsiUtilBase.findEditor(psiClass), MAX_USAGES);
+          new ShowUsagesAction(Decider.INJECTORS).startFindUsages(psiClass,
+              new RelativePoint(mouseEvent), PsiUtilBase.findEditor(psiClass), MAX_USAGES);
         }
       };
 
@@ -134,7 +113,8 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
             PsiClass outerClass = classResolveResult.getElement();
 
             // If Lazy<Foo> or Provider<Foo>, extract Foo as the interesting type.
-            if (outerClass.equals(lazyClass) || outerClass.equals(providerClass)) {
+            if (outerClass != null //
+                && (outerClass.equals(lazyClass) || outerClass.equals(providerClass))) {
               PsiType genericType = classResolveResult.getSubstitutor()
                   .getSubstitutionMap()
                   .values()
@@ -145,8 +125,8 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
             }
           }
 
-          new ShowUsagesAction(PROVIDERS).startFindUsages(psiClass, new RelativePoint(mouseEvent),
-              PsiUtilBase.findEditor(psiClass), MAX_USAGES);
+          new ShowUsagesAction(Decider.PROVIDERS).startFindUsages(psiClass,
+              new RelativePoint(mouseEvent), PsiUtilBase.findEditor(psiClass), MAX_USAGES);
         }
       };
 
@@ -163,6 +143,7 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
               UPDATE_ALL, null, NAV_HANDLER_PROVIDES_TO_INJECT, LEFT);
         }
       }
+
       // Constructor injection.
       if (methodElement.isConstructor() && PsiConsultantImpl.hasAnnotation(element, CLASS_INJECT)) {
         PsiIdentifier nameIdentifier = methodElement.getNameIdentifier();
