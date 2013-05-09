@@ -390,22 +390,23 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
     });
 
     Processor<Usage> collect = new Processor<Usage>() {
-      private final UsageTarget[] myUsageTarget =
-          { new PsiElement2UsageTargetAdapter(handler.getPsiElement()) };
+      private UsageTarget myUsageTarget =
+          new PsiElement2UsageTargetAdapter(handler.getPsiElement());
 
       @Override
       public boolean process(@NotNull Usage usage) {
         synchronized (usages) {
           if (visibleNodes.size() >= maxUsages) return false;
-          if (UsageViewManager.isSelfUsage(usage, myUsageTarget)) {
+          if (UsageViewManager.isSelfUsage(usage, new UsageTarget[] { myUsageTarget })) {
             return true;
           }
 
-          Usage usageToAdd = transform(usage);
+          Usage usageToAdd = transform(myUsageTarget, usage);
           if (usageToAdd == null) return true;
 
           UsageNode node = usageView.doAppendUsage(usageToAdd);
           usages.add(usageToAdd);
+
           if (node != null) {
             visibleNodes.add(node);
             boolean continueSearch = true;
@@ -418,6 +419,7 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
 
             return continueSearch;
           }
+
           return true;
         }
       }
@@ -487,8 +489,8 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
     });
   }
 
-  protected @Nullable Usage transform(@NotNull Usage usage) {
-    if (!decider.shouldShow(usage)) {
+  protected @Nullable Usage transform(@NotNull UsageTarget myUsageTarget, @NotNull Usage usage) {
+    if (!decider.shouldShow(myUsageTarget, usage)) {
       return null;
     } else {
       return usage;
