@@ -42,7 +42,9 @@ public class ConstructorInjectToProvidesHandler implements GutterIconNavigationH
       psiClassList.add(parameterClass);
     }
 
-    if (psiClassList.size() > 1) {
+    if (psiClassList.size() == 1) {
+      showUsages(mouseEvent, psiClassList.get(0));
+    } else {
       new PickTypeAction().startPickTypes(new RelativePoint(mouseEvent), psiClassList,
           new PickTypeAction.Callback() {
             @Override public void onClassChosen(PsiClass clazz) {
