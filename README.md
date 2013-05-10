@@ -11,7 +11,7 @@ between a `@Inject` object and the `@Provides` method that creates it.
 Download
 --------
 
-// TODO
+[Download](https://github.com/square/dagger-intellij-plugin/blob/master/dagger-intellij-plugin.zip?raw=true) the plugin and select `Install Plugin From Disk` in idea.
 
 
 License
