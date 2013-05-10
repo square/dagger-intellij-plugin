@@ -1,9 +1,12 @@
-Dagger IntelliJ IDEA Plugin
-===========================
+Dagger IntelliJ Plugin
+======================
 
-[Dagger](https://square.github.io/dagger) can provide a Class objects without needing to know how they are constructed. The Dagger IntelliJ plugin helps demystify this behavior and creates visual connections between a @Inject object and the @Provides method that creates it.
+[Dagger][1] can provide a class objects without needing to know how they are constructed.
+The Dagger IntelliJ plugin helps demystify this behavior and creates visual connections
+between a `@Inject` object and the `@Provides` method that creates it.
 
 ![inject->provide](./images/inject-to-provide.gif)
+
 
 Download
 --------
@@ -27,3 +30,6 @@ License
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
+
+
+[1]: http://square.github.io/dagger/
