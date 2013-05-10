@@ -33,4 +33,4 @@ License
 
 
 [1]: http://square.github.io/dagger/
-[2]: https://github.com/square/dagger-intellij-plugin/blob/master/dagger-intellij-plugin.zip?raw=true
+[2]: https://github.com/square/dagger-intellij-plugin/blob/master/dagger-intellij-plugin.jar?raw=true
