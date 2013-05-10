@@ -13,6 +13,8 @@ public class PickTypeAction {
 
   public void startPickTypes(RelativePoint relativePoint, List<PsiClass> psiClassList,
       final Callback callback) {
+    if(psiClassList.isEmpty()) return;
+
     ListPopup listPopup = JBPopupFactory.getInstance()
         .createListPopup(new BaseListPopupStep<PsiClass>("Select Type", psiClassList) {
           @NotNull @Override public String getTextFor(PsiClass value) {
