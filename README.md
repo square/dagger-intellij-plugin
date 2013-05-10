@@ -5,13 +5,13 @@ Dagger IntelliJ Plugin
 The Dagger IntelliJ plugin helps demystify this behavior and creates visual connections
 between a `@Inject` object and the `@Provides` method that creates it.
 
-![inject->provide](./images/inject-to-provide.gif)
+![inject->provide](images/inject-to-provide.gif)
 
 
 Download
 --------
 
-[Download](https://github.com/square/dagger-intellij-plugin/blob/master/dagger-intellij-plugin.zip?raw=true) the plugin and select `Install Plugin From Disk` in idea.
+[Download][2] the plugin zip and select "Install Plugin From Disk" in IntelliJ's plugin preferences.
 
 
 License
@@ -33,3 +33,4 @@ License
 
 
 [1]: http://square.github.io/dagger/
+[2]: https://github.com/square/dagger-intellij-plugin/blob/master/dagger-intellij-plugin.zip?raw=true
