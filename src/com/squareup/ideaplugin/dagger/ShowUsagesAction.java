@@ -556,12 +556,9 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
     JComponent label =
         createHintComponent(text, handler, popupPosition, editor, HIDE_HINTS_ACTION, maxUsages,
             options);
-    if (editor == null || editor.isDisposed()) {
-      HintManager.getInstance().showHint(label, popupPosition, HintManager.HIDE_BY_ANY_KEY |
-          HintManager.HIDE_BY_TEXT_CHANGE | HintManager.HIDE_BY_SCROLLING, 0);
-    } else {
-      HintManager.getInstance().showInformationHint(editor, label);
-    }
+
+    HintManager.getInstance().showHint(label, popupPosition, HintManager.HIDE_BY_ANY_KEY |
+        HintManager.HIDE_BY_TEXT_CHANGE | HintManager.HIDE_BY_SCROLLING, 0);
   }
 
   @NotNull
