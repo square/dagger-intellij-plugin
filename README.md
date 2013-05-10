@@ -11,7 +11,7 @@ between a `@Inject` object and the `@Provides` method that creates it.
 Download
 --------
 
-[Download][2] the plugin zip and select "Install Plugin From Disk" in IntelliJ's plugin preferences.
+[Download][2] the plugin jar and select "Install Plugin From Disk" in IntelliJ's plugin preferences.
 
 
 License
