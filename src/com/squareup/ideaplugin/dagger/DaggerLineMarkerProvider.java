@@ -1,25 +1,16 @@
 package com.squareup.ideaplugin.dagger;
 
-import com.intellij.codeInsight.daemon.GutterIconNavigationHandler;
 import com.intellij.codeInsight.daemon.LineMarkerInfo;
 import com.intellij.codeInsight.daemon.LineMarkerProvider;
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.IconLoader;
-import com.intellij.psi.JavaPsiFacade;
-import com.intellij.psi.PsiClass;
-import com.intellij.psi.PsiClassType;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiIdentifier;
 import com.intellij.psi.PsiMethod;
-import com.intellij.psi.PsiParameter;
-import com.intellij.psi.PsiType;
 import com.intellij.psi.PsiTypeElement;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.util.PsiUtilBase;
-import com.intellij.ui.awt.RelativePoint;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
+import com.squareup.ideaplugin.dagger.handler.ConstructorInjectToProvidesHandler;
+import com.squareup.ideaplugin.dagger.handler.FieldInjectToProvidesHandler;
+import com.squareup.ideaplugin.dagger.handler.ProvidesToInjectHandler;
 import java.util.Collection;
 import java.util.List;
 import javax.swing.Icon;
@@ -28,110 +19,24 @@ import org.jetbrains.annotations.Nullable;
 
 import static com.intellij.codeHighlighting.Pass.UPDATE_ALL;
 import static com.intellij.openapi.editor.markup.GutterIconRenderer.Alignment.LEFT;
+import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_INJECT;
+import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_PROVIDES;
 
 public class DaggerLineMarkerProvider implements LineMarkerProvider {
-  public static final String CLASS_INJECT = "javax.inject.Inject";
-  public static final String CLASS_LAZY = "dagger.Lazy";
-  public static final String CLASS_PROVIDER = "javax.inject.Provider";
-  public static final String CLASS_PROVIDES = "dagger.Provides";
-
   private static final Icon ICON = IconLoader.getIcon("/icons/dagger.png");
-  private static final int MAX_USAGES = 100;
 
-  // @Inject Foo(Bar bar) --> Type list
-  private static final GutterIconNavigationHandler<PsiElement> NAV_HANDLER_CTOR_INJECT_LIST =
-      new GutterIconNavigationHandler<PsiElement>() {
-        @Override public void navigate(final MouseEvent mouseEvent, PsiElement psiElement) {
-          if (!(psiElement instanceof PsiMethod)) {
-            throw new IllegalStateException("Called with non-method: " + psiElement);
-          }
-          PsiMethod psiMethod = (PsiMethod) psiElement;
-          if (!psiMethod.isConstructor()) {
-            throw new IllegalStateException("Called with non-constructor: " + psiElement);
-          }
-
-          PsiParameter[] parameters = psiMethod.getParameterList().getParameters();
-          List<PsiClass> psiClassList = new ArrayList<PsiClass>();
-          for (PsiParameter parameter : parameters) {
-            psiClassList.add(PsiConsultantImpl.getClass(parameter));
-          }
-
-          if (psiClassList.size() > 1) {
-            new PickTypeAction().startPickTypes(new RelativePoint(mouseEvent), psiClassList,
-                new PickTypeAction.Callback() {
-                  @Override public void onClassChosen(PsiClass clazz) {
-                    showUsages(mouseEvent, clazz);
-                  }
-                });
-          } else {
-            showUsages(mouseEvent, psiClassList.get(0));
-          }
-        }
-
-        private void showUsages(MouseEvent mouseEvent, PsiClass firstType) {
-          new ShowUsagesAction(Decider.PROVIDERS).startFindUsages(firstType,
-              new RelativePoint(mouseEvent), PsiUtilBase.findEditor(firstType), MAX_USAGES);
-        }
-      };
-
-  // @Provides --> @Inject
-  private static final GutterIconNavigationHandler<PsiElement> NAV_HANDLER_PROVIDES_TO_INJECT =
-      new GutterIconNavigationHandler<PsiElement>() {
-        @Override public void navigate(MouseEvent mouseEvent, PsiElement psiElement) {
-          if (!(psiElement instanceof PsiMethod)) {
-            throw new IllegalStateException("Called with non-method: " + psiElement);
-          }
-          PsiClass psiClass = PsiConsultantImpl.getReturnClassFromMethod((PsiMethod) psiElement);
-          new ShowUsagesAction(Decider.INJECTORS).startFindUsages(psiClass,
-              new RelativePoint(mouseEvent), PsiUtilBase.findEditor(psiClass), MAX_USAGES);
-        }
-      };
-
-  // @Inject --> @Provides
-  private static final GutterIconNavigationHandler<PsiElement> NAV_HANDLER_INJECT_TO_PROVIDES =
-      new GutterIconNavigationHandler<PsiElement>() {
-        @Override public void navigate(MouseEvent mouseEvent, PsiElement psiElement) {
-          if (!(psiElement instanceof PsiField)) {
-            throw new IllegalStateException("Called with non-field element: " + psiElement);
-          }
-          PsiField psiField = (PsiField) psiElement;
-
-          PsiType psiFieldType = psiField.getType();
-          PsiClass psiClass = PsiConsultantImpl.getClass(psiField);
-
-          if (psiFieldType instanceof PsiClassType) {
-            PsiClassType psiClassType = (PsiClassType) psiFieldType;
-
-            Project project = psiElement.getProject();
-            JavaPsiFacade javaPsiFacade = JavaPsiFacade.getInstance(project);
-            GlobalSearchScope globalSearchScope = GlobalSearchScope.allScope(project);
-
-            PsiClass lazyClass = javaPsiFacade.findClass(CLASS_LAZY, globalSearchScope);
-            PsiClass providerClass = javaPsiFacade.findClass(CLASS_PROVIDER, globalSearchScope);
-
-            PsiClassType.ClassResolveResult classResolveResult = psiClassType.resolveGenerics();
-            PsiClass outerClass = classResolveResult.getElement();
-
-            // If Lazy<Foo> or Provider<Foo>, extract Foo as the interesting type.
-            if (outerClass != null //
-                && (outerClass.equals(lazyClass) || outerClass.equals(providerClass))) {
-              PsiType genericType = classResolveResult.getSubstitutor()
-                  .getSubstitutionMap()
-                  .values()
-                  .iterator()
-                  .next();
-              // Convert genericType to its PsiClass and store in psiClass
-              psiClass = PsiConsultantImpl.getClass(genericType);
-            }
-          }
-
-          new ShowUsagesAction(Decider.PROVIDERS).startFindUsages(psiClass,
-              new RelativePoint(mouseEvent), PsiUtilBase.findEditor(psiClass), MAX_USAGES);
-        }
-      };
-
+  /**
+   * Check the element. If the element is a PsiMethod, than we want to know if it's a @Provides
+   * method, or a Constructor annotated w/ @Inject.
+   *
+   * If element is a field, than we only want to see if it is annotated with @Inject.
+   *
+   * @return a {@link com.intellij.codeInsight.daemon.GutterIconNavigationHandler} for the
+   *         appropriate type, or null if we don't care about it.
+   */
   @Nullable @Override
   public LineMarkerInfo getLineMarkerInfo(@NotNull final PsiElement element) {
+    // Check methods first (includes constructors).
     if (element instanceof PsiMethod) {
       PsiMethod methodElement = (PsiMethod) element;
 
@@ -140,7 +45,7 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
         PsiTypeElement returnTypeElement = methodElement.getReturnTypeElement();
         if (returnTypeElement != null) {
           return new LineMarkerInfo<PsiElement>(element, returnTypeElement.getTextRange(), ICON,
-              UPDATE_ALL, null, NAV_HANDLER_PROVIDES_TO_INJECT, LEFT);
+              UPDATE_ALL, null, new ProvidesToInjectHandler(), LEFT);
         }
       }
 
@@ -149,17 +54,19 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
         PsiIdentifier nameIdentifier = methodElement.getNameIdentifier();
         if (nameIdentifier != null) {
           return new LineMarkerInfo<PsiElement>(element, nameIdentifier.getTextRange(), ICON,
-              UPDATE_ALL, null, NAV_HANDLER_CTOR_INJECT_LIST, LEFT);
+              UPDATE_ALL, null, new ConstructorInjectToProvidesHandler(), LEFT);
         }
       }
+
+      // Not a method, is it a Field?
     } else if (element instanceof PsiField) {
+      // Field injection.
       PsiField fieldElement = (PsiField) element;
       PsiTypeElement typeElement = fieldElement.getTypeElement();
 
-      // Field injection.
       if (PsiConsultantImpl.hasAnnotation(element, CLASS_INJECT) && typeElement != null) {
         return new LineMarkerInfo<PsiElement>(element, typeElement.getTextRange(), ICON, UPDATE_ALL,
-            null, NAV_HANDLER_INJECT_TO_PROVIDES, LEFT);
+            null, new FieldInjectToProvidesHandler(), LEFT);
       }
     }
 
@@ -168,5 +75,6 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
 
   @Override public void collectSlowLineMarkers(@NotNull List<PsiElement> psiElements,
       @NotNull Collection<LineMarkerInfo> lineMarkerInfos) {
+    // Sure buddy. You ever explain how and we just might.
   }
 }

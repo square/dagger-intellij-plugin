@@ -7,7 +7,13 @@ import com.intellij.usages.Usage;
 import com.intellij.usages.UsageInfo2UsageAdapter;
 import com.intellij.usages.UsageTarget;
 
+import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_INJECT;
+import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_PROVIDES;
+
 public interface Decider {
+
+  boolean shouldShow(UsageTarget target, Usage usage);
+
   public Decider ALL = new Decider() {
     @Override public boolean shouldShow(UsageTarget target, Usage usage) {
       return true;
@@ -20,24 +26,23 @@ public interface Decider {
       PsiMethod psimethod = PsiConsultantImpl.findMethod(element);
 
       return psimethod != null
-          && PsiConsultantImpl.hasAnnotation(psimethod, DaggerLineMarkerProvider.CLASS_PROVIDES)
-          && PsiConsultantImpl.getReturnClassFromMethod(psimethod).getName().equals(target.getName());
+          && PsiConsultantImpl.hasAnnotation(psimethod, CLASS_PROVIDES)
+          && PsiConsultantImpl.getReturnClassFromMethod(psimethod)
+          .getName()
+          .equals(target.getName());
     }
   };
 
-  public Decider INJECTORS = new Decider() {
+  public Decider INJECTION_SITES = new Decider() {
     @Override public boolean shouldShow(UsageTarget target, Usage usage) {
       PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
       PsiField field = PsiConsultantImpl.findField(element);
-      if (field != null && PsiConsultantImpl.hasAnnotation(field, DaggerLineMarkerProvider.CLASS_INJECT)) {
+      if (field != null && PsiConsultantImpl.hasAnnotation(field, CLASS_INJECT)) {
         return true;
       }
 
       PsiMethod method = PsiConsultantImpl.findMethod(element);
-      return method != null && PsiConsultantImpl.hasAnnotation(method, DaggerLineMarkerProvider.CLASS_INJECT);
+      return method != null && PsiConsultantImpl.hasAnnotation(method, CLASS_INJECT);
     }
   };
-
-  boolean shouldShow(UsageTarget target, Usage usage);
-
 }

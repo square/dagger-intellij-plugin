@@ -1,5 +1,7 @@
 package com.squareup.ideaplugin.dagger;
 
+import com.intellij.openapi.project.Project;
+import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiClassType;
@@ -8,8 +10,13 @@ import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifierList;
 import com.intellij.psi.PsiModifierListOwner;
+import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.PsiVariable;
+import com.intellij.psi.search.GlobalSearchScope;
+
+import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_LAZY;
+import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_PROVIDER;
 
 public class PsiConsultantImpl {
 
@@ -73,5 +80,48 @@ public class PsiConsultantImpl {
     } else {
       return findField(element.getParent());
     }
+  }
+
+  public static PsiClass checkForLazyOrProvider(PsiField psiField, PsiClass wrapperClass) {
+    PsiType psiFieldType = psiField.getType();
+    if (!(psiFieldType instanceof PsiClassType)) {
+      return wrapperClass;
+    }
+
+    return getPsiClass(psiField, wrapperClass, psiFieldType);
+  }
+
+  public static PsiClass checkForLazyOrProvider(PsiParameter psiParameter, PsiClass wrapperClass) {
+    PsiType psiParameterType = psiParameter.getType();
+    if (!(psiParameterType instanceof PsiClassType)) {
+      return wrapperClass;
+    }
+
+    return getPsiClass(psiParameter, wrapperClass, psiParameterType);
+  }
+
+  private static PsiClass getPsiClass(PsiElement psiElement, PsiClass wrapperClass,
+      PsiType psiFieldType) {
+    PsiClassType psiClassType = (PsiClassType) psiFieldType;
+    Project project = psiElement.getProject();
+    JavaPsiFacade javaPsiFacade = JavaPsiFacade.getInstance(project);
+    GlobalSearchScope globalSearchScope = GlobalSearchScope.allScope(project);
+
+    PsiClass lazyClass = javaPsiFacade.findClass(CLASS_LAZY, globalSearchScope);
+    PsiClass providerClass = javaPsiFacade.findClass(CLASS_PROVIDER, globalSearchScope);
+
+    PsiClassType.ClassResolveResult classResolveResult = psiClassType.resolveGenerics();
+    PsiClass outerClass = classResolveResult.getElement();
+
+    // If Lazy<Foo> or Provider<Foo>, extract Foo as the interesting type.
+    if (outerClass != null //
+        && (outerClass.equals(lazyClass) || outerClass.equals(providerClass))) {
+      PsiType genericType =
+          classResolveResult.getSubstitutor().getSubstitutionMap().values().iterator().next();
+      // Convert genericType to its PsiClass and store in psiClass
+      wrapperClass = getClass(genericType);
+    }
+
+    return wrapperClass;
   }
 }

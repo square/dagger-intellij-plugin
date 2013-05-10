@@ -262,7 +262,7 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
     HintManager.getInstance().hideHints(HintManager.HIDE_BY_ANY_KEY, false, false);
   }
 
-  void startFindUsages(@NotNull PsiElement element, @NotNull RelativePoint popupPosition,
+  public void startFindUsages(@NotNull PsiElement element, @NotNull RelativePoint popupPosition,
       Editor editor, int maxUsages) {
     Project project = element.getProject();
     FindUsagesManager findUsagesManager =
