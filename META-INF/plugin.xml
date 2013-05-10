@@ -7,8 +7,8 @@
   <description><![CDATA[
     Provides actions which allow you quickly move around your object graph.
     <ul>
-      <li><code>@Inject</code> to <code>@Produce</code></li>
-      <li><code>@Produce</code> to all <code>@Inject</code>s</li>
+      <li><code>@Inject</code> to <code>@Provides</code></li>
+      <li><code>@Provides</code> to all <code>@Inject</code>s</li>
       <li>Support for <code>Lazy&lt;T></code> and <code>Provider&lt;T></code></li>
     </ul>
   ]]></description>
