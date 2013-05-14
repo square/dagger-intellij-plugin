@@ -1,7 +1,6 @@
 package com.squareup.ideaplugin.dagger.handler;
 
 import com.intellij.codeInsight.daemon.GutterIconNavigationHandler;
-import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiParameter;
@@ -34,19 +33,20 @@ public class ConstructorInjectToProvidesHandler implements GutterIconNavigationH
 
     PsiParameter[] parameters = psiMethod.getParameterList().getParameters();
     if (parameters.length == 1) {
-      showUsages(mouseEvent, PsiConsultantImpl.checkForLazyOrProvider(parameters[0]));
+      showUsages(mouseEvent, parameters[0]);
     } else {
       new PickTypeAction().startPickTypes(new RelativePoint(mouseEvent), parameters,
           new PickTypeAction.Callback() {
             @Override public void onParameterChosen(PsiParameter selected) {
-              showUsages(mouseEvent, PsiConsultantImpl.checkForLazyOrProvider(selected));
+              showUsages(mouseEvent, selected);
             }
           });
     }
   }
 
-  private void showUsages(MouseEvent mouseEvent, PsiClass firstType) {
-    new ShowUsagesAction(Decider.PROVIDERS).startFindUsages(firstType,
-        new RelativePoint(mouseEvent), PsiUtilBase.findEditor(firstType), MAX_USAGES);
+  private void showUsages(MouseEvent mouseEvent, PsiParameter psiParameter) {
+    new ShowUsagesAction(new Decider.ConstructorParameterDecider(psiParameter)).startFindUsages(
+        PsiConsultantImpl.checkForLazyOrProvider(psiParameter), new RelativePoint(mouseEvent),
+        PsiUtilBase.findEditor(psiParameter), MAX_USAGES);
   }
 }
