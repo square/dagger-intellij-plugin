@@ -5,24 +5,34 @@ import com.intellij.openapi.ui.popup.ListPopup;
 import com.intellij.openapi.ui.popup.PopupStep;
 import com.intellij.openapi.ui.popup.util.BaseListPopupStep;
 import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiParameter;
 import com.intellij.ui.awt.RelativePoint;
-import java.util.List;
+import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 
 public class PickTypeAction {
 
-  public void startPickTypes(RelativePoint relativePoint, List<PsiClass> psiClassList,
+  public void startPickTypes(RelativePoint relativePoint, PsiParameter[] psiParameters,
       final Callback callback) {
-    if(psiClassList.isEmpty()) return;
+    if (psiParameters.length == 0) return;
 
     ListPopup listPopup = JBPopupFactory.getInstance()
-        .createListPopup(new BaseListPopupStep<PsiClass>("Select Type", psiClassList) {
-          @NotNull @Override public String getTextFor(PsiClass value) {
-            return value.getName();
+        .createListPopup(new BaseListPopupStep<PsiParameter>("Select Type", psiParameters) {
+          @NotNull @Override public String getTextFor(PsiParameter value) {
+            StringBuilder builder = new StringBuilder();
+
+            Set<String> annotations = PsiConsultantImpl.getQualifierAnnotations(value);
+            for (String annotation : annotations) {
+              String trimmed = annotation.substring(annotation.lastIndexOf(".") + 1);
+              builder.append("@").append(trimmed).append(" ");
+            }
+
+            PsiClass notLazyOrProvider = PsiConsultantImpl.checkForLazyOrProvider(value);
+            return builder.append(notLazyOrProvider.getName()).toString();
           }
 
-          @Override public PopupStep onChosen(PsiClass selectedValue, boolean finalChoice) {
-            callback.onClassChosen(selectedValue);
+          @Override public PopupStep onChosen(PsiParameter selectedValue, boolean finalChoice) {
+            callback.onParameterChosen(selectedValue);
             return super.onChosen(selectedValue, finalChoice);
           }
         });
@@ -31,6 +41,6 @@ public class PickTypeAction {
   }
 
   public interface Callback {
-    void onClassChosen(PsiClass clazz);
+    void onParameterChosen(PsiParameter clazz);
   }
 }

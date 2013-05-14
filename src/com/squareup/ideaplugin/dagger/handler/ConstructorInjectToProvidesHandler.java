@@ -1,7 +1,6 @@
 package com.squareup.ideaplugin.dagger.handler;
 
 import com.intellij.codeInsight.daemon.GutterIconNavigationHandler;
-import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiParameter;
@@ -12,8 +11,6 @@ import com.squareup.ideaplugin.dagger.PickTypeAction;
 import com.squareup.ideaplugin.dagger.PsiConsultantImpl;
 import com.squareup.ideaplugin.dagger.ShowUsagesAction;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.List;
 
 import static com.squareup.ideaplugin.dagger.DaggerConstants.MAX_USAGES;
 
@@ -35,27 +32,21 @@ public class ConstructorInjectToProvidesHandler implements GutterIconNavigationH
     }
 
     PsiParameter[] parameters = psiMethod.getParameterList().getParameters();
-    List<PsiClass> psiClassList = new ArrayList<PsiClass>();
-    for (PsiParameter parameter : parameters) {
-      PsiClass injectedClass = PsiConsultantImpl.getClass(parameter);
-      PsiClass parameterClass = PsiConsultantImpl.checkForLazyOrProvider(parameter, injectedClass);
-      psiClassList.add(parameterClass);
-    }
-
-    if (psiClassList.size() == 1) {
-      showUsages(mouseEvent, psiClassList.get(0));
+    if (parameters.length == 1) {
+      showUsages(mouseEvent, parameters[0]);
     } else {
-      new PickTypeAction().startPickTypes(new RelativePoint(mouseEvent), psiClassList,
+      new PickTypeAction().startPickTypes(new RelativePoint(mouseEvent), parameters,
           new PickTypeAction.Callback() {
-            @Override public void onClassChosen(PsiClass clazz) {
-              showUsages(mouseEvent, clazz);
+            @Override public void onParameterChosen(PsiParameter selected) {
+              showUsages(mouseEvent, selected);
             }
           });
     }
   }
 
-  private void showUsages(MouseEvent mouseEvent, PsiClass firstType) {
-    new ShowUsagesAction(Decider.PROVIDERS).startFindUsages(firstType,
-        new RelativePoint(mouseEvent), PsiUtilBase.findEditor(firstType), MAX_USAGES);
+  private void showUsages(MouseEvent mouseEvent, PsiParameter psiParameter) {
+    new ShowUsagesAction(new Decider.ConstructorParameterInjectDecider(psiParameter)).startFindUsages(
+        PsiConsultantImpl.checkForLazyOrProvider(psiParameter), new RelativePoint(mouseEvent),
+        PsiUtilBase.findEditor(psiParameter), MAX_USAGES);
   }
 }
