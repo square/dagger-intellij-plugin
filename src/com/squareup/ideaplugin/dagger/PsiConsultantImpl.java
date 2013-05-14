@@ -14,16 +14,24 @@ import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.PsiVariable;
 import com.intellij.psi.search.GlobalSearchScope;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_LAZY;
 import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_PROVIDER;
+import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_QUALIFIER;
 
 public class PsiConsultantImpl {
+
+  public static boolean hasAnnotation(PsiElement element, String annotationName) {
+    return findAnnotation(element, annotationName) != null;
+  }
 
   static PsiAnnotation findAnnotation(PsiElement element, String annotationName) {
     if (element instanceof PsiModifierListOwner) {
       PsiModifierListOwner listOwner = (PsiModifierListOwner) element;
       PsiModifierList modifierList = listOwner.getModifierList();
+
       if (modifierList != null) {
         for (PsiAnnotation psiAnnotation : modifierList.getAnnotations()) {
           if (annotationName.equals(psiAnnotation.getQualifiedName())) {
@@ -32,14 +40,41 @@ public class PsiConsultantImpl {
         }
       }
     }
+
     return null;
   }
 
-  static boolean hasAnnotation(PsiElement element, String annotationName) {
-    return findAnnotation(element, annotationName) != null;
+  public static Set<String> getQualifierAnnotations(PsiElement element) {
+    Set<String> qualifiedClasses = new HashSet<String>();
+
+    if (element instanceof PsiModifierListOwner) {
+      PsiModifierListOwner listOwner = (PsiModifierListOwner) element;
+      PsiModifierList modifierList = listOwner.getModifierList();
+
+      if (modifierList != null) {
+        for (PsiAnnotation psiAnnotation : modifierList.getAnnotations()) {
+          if (psiAnnotation != null && psiAnnotation.getQualifiedName() != null) {
+            JavaPsiFacade psiFacade = JavaPsiFacade.getInstance(element.getProject());
+            PsiClass psiClass = psiFacade.findClass(psiAnnotation.getQualifiedName(),
+                GlobalSearchScope.projectScope(element.getProject()));
+
+            if (hasAnnotation(psiClass, CLASS_QUALIFIER)) {
+              qualifiedClasses.add(psiAnnotation.getQualifiedName());
+            }
+          }
+        }
+      }
+    }
+
+    return qualifiedClasses;
   }
 
-  static PsiMethod findMethod(PsiElement element) {
+  public static boolean hasQuailifierAnnotations(PsiElement element, Set<String> types) {
+    Set<String> actualAnnotations = getQualifierAnnotations(element);
+    return actualAnnotations.equals(types);
+  }
+
+  public static PsiMethod findMethod(PsiElement element) {
     if (element == null) {
       return null;
     } else if (element instanceof PsiMethod) {
@@ -82,7 +117,9 @@ public class PsiConsultantImpl {
     }
   }
 
-  public static PsiClass checkForLazyOrProvider(PsiField psiField, PsiClass wrapperClass) {
+  public static PsiClass checkForLazyOrProvider(PsiField psiField) {
+    PsiClass wrapperClass = PsiConsultantImpl.getClass(psiField);
+
     PsiType psiFieldType = psiField.getType();
     if (!(psiFieldType instanceof PsiClassType)) {
       return wrapperClass;
@@ -91,7 +128,9 @@ public class PsiConsultantImpl {
     return getPsiClass(psiField, wrapperClass, psiFieldType);
   }
 
-  public static PsiClass checkForLazyOrProvider(PsiParameter psiParameter, PsiClass wrapperClass) {
+  public static PsiClass checkForLazyOrProvider(PsiParameter psiParameter) {
+    PsiClass wrapperClass = PsiConsultantImpl.getClass(psiParameter);
+
     PsiType psiParameterType = psiParameter.getType();
     if (!(psiParameterType instanceof PsiClassType)) {
       return wrapperClass;
