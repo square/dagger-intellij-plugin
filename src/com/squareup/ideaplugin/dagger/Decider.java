@@ -57,11 +57,27 @@ public interface Decider {
    * Construct with a PsiParameter from an @Inject constructor and then use this to ensure the
    * usage fits.
    */
-  public class ConstructorParameterDecider implements Decider {
+  public class ConstructorParameterInjectDecider extends IsAProviderDecider {
+    public ConstructorParameterInjectDecider(PsiParameter psiParameter) {
+      super(PsiConsultantImpl.getQualifierAnnotations(psiParameter));
+    }
+  }
+
+  /**
+   * Construct with a PsiField annotated w/ @Inject and then use this to ensure the
+   * usage fits.
+   */
+  public class FieldInjectDecider extends IsAProviderDecider {
+    public FieldInjectDecider(PsiField psiField) {
+      super(PsiConsultantImpl.getQualifierAnnotations(psiField));
+    }
+  }
+
+  class IsAProviderDecider implements Decider {
     private final Set<String> qualifierAnnotations;
 
-    public ConstructorParameterDecider(PsiParameter psiParameter) {
-      qualifierAnnotations = PsiConsultantImpl.getQualifierAnnotations(psiParameter);
+    public IsAProviderDecider(Set<String> qualifierAnnotations) {
+      this.qualifierAnnotations = qualifierAnnotations;
     }
 
     @Override public boolean shouldShow(UsageTarget target, Usage usage) {
@@ -76,19 +92,6 @@ public interface Decider {
           && PsiConsultantImpl.hasQuailifierAnnotations(psimethod, qualifierAnnotations)
 
           // Right return type.
-          && PsiConsultantImpl.getReturnClassFromMethod(psimethod)
-          .getName()
-          .equals(target.getName());
-    }
-  }
-
-  public class FieldDecider implements Decider {
-    @Override public boolean shouldShow(UsageTarget target, Usage usage) {
-      PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
-      PsiMethod psimethod = PsiConsultantImpl.findMethod(element);
-
-      return psimethod != null
-          && PsiConsultantImpl.hasAnnotation(psimethod, CLASS_PROVIDES)
           && PsiConsultantImpl.getReturnClassFromMethod(psimethod)
           .getName()
           .equals(target.getName());

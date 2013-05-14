@@ -45,7 +45,7 @@ public class ConstructorInjectToProvidesHandler implements GutterIconNavigationH
   }
 
   private void showUsages(MouseEvent mouseEvent, PsiParameter psiParameter) {
-    new ShowUsagesAction(new Decider.ConstructorParameterDecider(psiParameter)).startFindUsages(
+    new ShowUsagesAction(new Decider.ConstructorParameterInjectDecider(psiParameter)).startFindUsages(
         PsiConsultantImpl.checkForLazyOrProvider(psiParameter), new RelativePoint(mouseEvent),
         PsiUtilBase.findEditor(psiParameter), MAX_USAGES);
   }
