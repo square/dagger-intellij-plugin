@@ -19,8 +19,10 @@ public class ProvidesToInjectHandler implements GutterIconNavigationHandler<PsiE
       throw new IllegalStateException("Called with non-method: " + psiElement);
     }
 
-    PsiClass psiClass = PsiConsultantImpl.getReturnClassFromMethod((PsiMethod) psiElement);
-    new ShowUsagesAction(Decider.INJECTION_SITES).startFindUsages(psiClass,
+    PsiMethod psiMethod = (PsiMethod) psiElement;
+    PsiClass psiClass = PsiConsultantImpl.getReturnClassFromMethod(psiMethod);
+
+    new ShowUsagesAction(new Decider.ProvidesMethodDecider(psiMethod)).startFindUsages(psiClass,
         new RelativePoint(mouseEvent), PsiUtilBase.findEditor(psiClass), MAX_USAGES);
   }
 }

@@ -490,11 +490,7 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
   }
 
   protected @Nullable Usage transform(@NotNull UsageTarget myUsageTarget, @NotNull Usage usage) {
-    if (!decider.shouldShow(myUsageTarget, usage)) {
-      return null;
-    } else {
-      return usage;
-    }
+    return decider.shouldShow(myUsageTarget, usage) ? usage : null;
   }
 
   @NotNull

@@ -1,5 +1,6 @@
 package com.squareup.ideaplugin.dagger;
 
+import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiMethod;
@@ -16,28 +17,51 @@ public interface Decider {
 
   boolean shouldShow(UsageTarget target, Usage usage);
 
-  public Decider PROVIDERS = new FieldDecider();
+  /** Construct with a PsiMethod from a Provider to find where this is injected. */
+  public class ProvidesMethodDecider implements Decider {
+    private final PsiClass returnType;
+    private final Set<String> qualifierAnnotations;
 
-  public Decider INJECTION_SITES = new Decider() {
+    public ProvidesMethodDecider(PsiMethod psiMethod) {
+      this.returnType = PsiConsultantImpl.getReturnClassFromMethod(psiMethod);
+      this.qualifierAnnotations = PsiConsultantImpl.getQualifierAnnotations(psiMethod);
+    }
+
     @Override public boolean shouldShow(UsageTarget target, Usage usage) {
       PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
+
       PsiField field = PsiConsultantImpl.findField(element);
-      if (field != null && PsiConsultantImpl.hasAnnotation(field, CLASS_INJECT)) {
+      if (field != null //
+          && PsiConsultantImpl.hasAnnotation(field, CLASS_INJECT) //
+          && PsiConsultantImpl.hasQuailifierAnnotations(field, qualifierAnnotations)) {
         return true;
       }
 
       PsiMethod method = PsiConsultantImpl.findMethod(element);
-      return method != null && PsiConsultantImpl.hasAnnotation(method, CLASS_INJECT);
-    }
-  };
+      if (method != null && PsiConsultantImpl.hasAnnotation(method, CLASS_INJECT)) {
+        PsiParameter[] parameters = method.getParameterList().getParameters();
+        for (PsiParameter parameter : parameters) {
+          PsiClass parameterClass = PsiConsultantImpl.checkForLazyOrProvider(parameter);
+          if (parameterClass.equals(returnType) && PsiConsultantImpl.hasQuailifierAnnotations(
+              parameter, qualifierAnnotations)) {
+            return true;
+          }
+        }
+      }
 
+      return false;
+    }
+  }
+
+  /**
+   * Construct with a PsiParameter from an @Inject constructor and then use this to ensure the
+   * usage fits.
+   */
   public class ConstructorParameterDecider implements Decider {
-    private final PsiParameter psiParameter;
     private final Set<String> qualifierAnnotations;
 
     public ConstructorParameterDecider(PsiParameter psiParameter) {
-      this.psiParameter = psiParameter;
-      this.qualifierAnnotations = PsiConsultantImpl.getQualifierAnnotations(psiParameter);
+      qualifierAnnotations = PsiConsultantImpl.getQualifierAnnotations(psiParameter);
     }
 
     @Override public boolean shouldShow(UsageTarget target, Usage usage) {
@@ -58,7 +82,7 @@ public interface Decider {
     }
   }
 
-  class FieldDecider implements Decider {
+  public class FieldDecider implements Decider {
     @Override public boolean shouldShow(UsageTarget target, Usage usage) {
       PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
       PsiMethod psimethod = PsiConsultantImpl.findMethod(element);

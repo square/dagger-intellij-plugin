@@ -28,7 +28,7 @@ public class FieldInjectToProvidesHandler implements GutterIconNavigationHandler
     PsiField psiField = (PsiField) psiElement;
     PsiClass injectedClass = PsiConsultantImpl.checkForLazyOrProvider(psiField);
 
-    new ShowUsagesAction(Decider.PROVIDERS).startFindUsages(injectedClass,
+    new ShowUsagesAction(new Decider.FieldDecider()).startFindUsages(injectedClass,
         new RelativePoint(mouseEvent), PsiUtilBase.findEditor(injectedClass), MAX_USAGES);
   }
 }

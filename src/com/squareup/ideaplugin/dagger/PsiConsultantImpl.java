@@ -70,8 +70,6 @@ public class PsiConsultantImpl {
   }
 
   public static boolean hasQuailifierAnnotations(PsiElement element, Set<String> types) {
-    if(types.isEmpty()) return true;
-
     Set<String> actualAnnotations = getQualifierAnnotations(element);
     return actualAnnotations.equals(types);
   }
