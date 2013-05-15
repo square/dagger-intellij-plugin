@@ -14,8 +14,9 @@
   ]]></description>
 
   <change-notes><![CDATA[
-    1.0.1: Add support for Qualifiers.
-    1.0.0: Initial version.
+    1.0.2: Build using Java 1.6. <br/>
+    1.0.1: Add support for Qualifiers. <br/>
+    1.0.0: Initial version. <br/>
   ]]></change-notes>
 
   <!-- please see http://confluence.jetbrains.net/display/IDEADEV/Build+Number+Ranges for description -->
