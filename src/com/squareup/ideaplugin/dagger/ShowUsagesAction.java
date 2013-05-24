@@ -401,7 +401,7 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
             return true;
           }
 
-          Usage usageToAdd = transform(myUsageTarget, usage);
+          Usage usageToAdd = decider.shouldShow(myUsageTarget, usage) ? usage : null;
           if (usageToAdd == null) return true;
 
           UsageNode node = usageView.doAppendUsage(usageToAdd);
@@ -487,10 +487,6 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
         indicator.cancel();
       }
     });
-  }
-
-  protected @Nullable Usage transform(@NotNull UsageTarget myUsageTarget, @NotNull Usage usage) {
-    return decider.shouldShow(myUsageTarget, usage) ? usage : null;
   }
 
   @NotNull

@@ -14,6 +14,7 @@
   ]]></description>
 
   <change-notes><![CDATA[
+    1.0.3: An @Inject constrcutor will take you to @Inject-ion usages<br/>
     1.0.2: Build using Java 1.6. <br/>
     1.0.1: Add support for Qualifiers. <br/>
     1.0.0: Initial version. <br/>
@@ -38,6 +39,8 @@
 
   <extensions defaultExtensionNs="com.intellij">
     <codeInsight.lineMarkerProvider language="JAVA"
-        implementationClass="com.squareup.ideaplugin.dagger.DaggerLineMarkerProvider"/>
+        implementationClass="com.squareup.ideaplugin.dagger.ProvidesLineMarkerProvider"/>
+    <codeInsight.lineMarkerProvider language="JAVA"
+        implementationClass="com.squareup.ideaplugin.dagger.InjectionLineMarkerProvider"/>
   </extensions>
 </idea-plugin>

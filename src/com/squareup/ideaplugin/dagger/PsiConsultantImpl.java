@@ -88,7 +88,10 @@ public class PsiConsultantImpl {
     if (psiElement instanceof PsiVariable) {
       PsiVariable variable = (PsiVariable) psiElement;
       return getClass(variable.getType());
+    } else if (psiElement instanceof PsiMethod) {
+      return ((PsiMethod) psiElement).getContainingClass();
     }
+
     return null;
   }
 

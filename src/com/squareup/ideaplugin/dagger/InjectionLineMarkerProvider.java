@@ -10,7 +10,6 @@ import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiTypeElement;
 import com.squareup.ideaplugin.dagger.handler.ConstructorInjectToProvidesHandler;
 import com.squareup.ideaplugin.dagger.handler.FieldInjectToProvidesHandler;
-import com.squareup.ideaplugin.dagger.handler.ProvidesToInjectHandler;
 import java.util.Collection;
 import java.util.List;
 import javax.swing.Icon;
@@ -20,14 +19,13 @@ import org.jetbrains.annotations.Nullable;
 import static com.intellij.codeHighlighting.Pass.UPDATE_ALL;
 import static com.intellij.openapi.editor.markup.GutterIconRenderer.Alignment.LEFT;
 import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_INJECT;
-import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_PROVIDES;
 
-public class DaggerLineMarkerProvider implements LineMarkerProvider {
-  private static final Icon ICON = IconLoader.getIcon("/icons/dagger.png");
+public class InjectionLineMarkerProvider implements LineMarkerProvider {
+  private static final Icon ICON = IconLoader.getIcon("/icons/inject.png");
 
   /**
-   * Check the element. If the element is a PsiMethod, than we want to know if it's a @Provides
-   * method, or a Constructor annotated w/ @Inject.
+   * Check the element. If the element is a PsiMethod, than we want to know if it's a Constructor
+   * annotated w/ @Inject.
    *
    * If element is a field, than we only want to see if it is annotated with @Inject.
    *
@@ -39,15 +37,6 @@ public class DaggerLineMarkerProvider implements LineMarkerProvider {
     // Check methods first (includes constructors).
     if (element instanceof PsiMethod) {
       PsiMethod methodElement = (PsiMethod) element;
-
-      // @Provides
-      if (PsiConsultantImpl.hasAnnotation(element, CLASS_PROVIDES)) {
-        PsiTypeElement returnTypeElement = methodElement.getReturnTypeElement();
-        if (returnTypeElement != null) {
-          return new LineMarkerInfo<PsiElement>(element, returnTypeElement.getTextRange(), ICON,
-              UPDATE_ALL, null, new ProvidesToInjectHandler(), LEFT);
-        }
-      }
 
       // Constructor injection.
       if (methodElement.isConstructor() && PsiConsultantImpl.hasAnnotation(element, CLASS_INJECT)) {
