@@ -82,8 +82,12 @@ public interface Decider {
 
     @Override public boolean shouldShow(UsageTarget target, Usage usage) {
       PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
-      PsiMethod psimethod = PsiConsultantImpl.findMethod(element);
 
+      // Is it a constructor annotated w/ @Inject?
+      // I don't even know how to get to the constructor!
+
+      // Is it a @Provides method?
+      PsiMethod psimethod = PsiConsultantImpl.findMethod(element);
       return psimethod != null
           // Ensure it has an @Provides.
           && PsiConsultantImpl.hasAnnotation(psimethod, CLASS_PROVIDES)
