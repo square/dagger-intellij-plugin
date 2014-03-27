@@ -68,7 +68,6 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.IdeFocusManager;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.SmartPsiElementPointer;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.ProjectScope;
 import com.intellij.psi.search.PsiElementProcessor;
@@ -426,61 +425,62 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
     };
 
     final ProgressIndicator indicator =
-        FindUsagesManager.startProcessUsages(handler, descriptor, collect, options, new Runnable() {
-          @Override
-          public void run() {
-            ApplicationManager.getApplication().invokeLater(new Runnable() {
+        FindUsagesManager.startProcessUsages(handler, handler.getPrimaryElements(),
+            handler.getSecondaryElements(), collect, options, new Runnable() {
               @Override
               public void run() {
-                Disposer.dispose(processIcon);
-                Container parent = processIcon.getParent();
-                parent.remove(processIcon);
-                parent.repaint();
-                pingEDT.ping(); // repaint title
-                synchronized (usages) {
-                  if (visibleNodes.isEmpty()) {
-                    if (usages.isEmpty()) {
-                      String text = UsageViewBundle.message("no.usages.found.in",
-                          searchScopePresentableName(options, project));
-                      showHint(text, editor, popupPosition, handler, maxUsages, options);
-                      popup.cancel();
-                    } else {
-                      // all usages filtered out
-                    }
-                  } else if (visibleNodes.size() == 1) {
-                    if (usages.size() == 1) {
-                      //the only usage
-                      Usage usage = visibleNodes.iterator().next().getUsage();
-                      usage.navigate(true);
-                      //String message = UsageViewBundle.message("show.usages.only.usage", searchScopePresentableName(options, project));
-                      //navigateAndHint(usage, message, handler, popupPosition, maxUsages, options);
-                      popup.cancel();
-                    } else {
-                      assert usages.size() > 1 : usages;
-                      // usage view can filter usages down to one
-                      Usage visibleUsage = visibleNodes.iterator().next().getUsage();
-                      if (areAllUsagesInOneLine(visibleUsage, usages)) {
-                        String hint =
-                            UsageViewBundle.message("all.usages.are.in.this.line", usages.size(),
-                                searchScopePresentableName(options, project));
-                        navigateAndHint(visibleUsage, hint, handler, popupPosition, maxUsages,
-                            options);
-                        popup.cancel();
+                ApplicationManager.getApplication().invokeLater(new Runnable() {
+                  @Override
+                  public void run() {
+                    Disposer.dispose(processIcon);
+                    Container parent = processIcon.getParent();
+                    parent.remove(processIcon);
+                    parent.repaint();
+                    pingEDT.ping(); // repaint title
+                    synchronized (usages) {
+                      if (visibleNodes.isEmpty()) {
+                        if (usages.isEmpty()) {
+                          String text = UsageViewBundle.message("no.usages.found.in",
+                              searchScopePresentableName(options, project));
+                          showHint(text, editor, popupPosition, handler, maxUsages, options);
+                          popup.cancel();
+                        } else {
+                          // all usages filtered out
+                        }
+                      } else if (visibleNodes.size() == 1) {
+                        if (usages.size() == 1) {
+                          //the only usage
+                          Usage usage = visibleNodes.iterator().next().getUsage();
+                          usage.navigate(true);
+                          //String message = UsageViewBundle.message("show.usages.only.usage", searchScopePresentableName(options, project));
+                          //navigateAndHint(usage, message, handler, popupPosition, maxUsages, options);
+                          popup.cancel();
+                        } else {
+                          assert usages.size() > 1 : usages;
+                          // usage view can filter usages down to one
+                          Usage visibleUsage = visibleNodes.iterator().next().getUsage();
+                          if (areAllUsagesInOneLine(visibleUsage, usages)) {
+                            String hint = UsageViewBundle.message("all.usages.are.in.this.line",
+                                usages.size(), searchScopePresentableName(options, project));
+                            navigateAndHint(visibleUsage, hint, handler, popupPosition, maxUsages,
+                                options);
+                            popup.cancel();
+                          }
+                        }
+                      } else {
+                        String title = presentation.getTabText();
+                        boolean shouldShowMoreSeparator =
+                            visibleNodes.contains(MORE_USAGES_SEPARATOR_NODE);
+                        String fullTitle = getFullTitle(usages, title, shouldShowMoreSeparator,
+                            visibleNodes.size() - (shouldShowMoreSeparator ? 1 : 0), false);
+                        ((AbstractPopup) popup).setCaption(fullTitle);
                       }
                     }
-                  } else {
-                    String title = presentation.getTabText();
-                    boolean shouldShowMoreSeparator =
-                        visibleNodes.contains(MORE_USAGES_SEPARATOR_NODE);
-                    String fullTitle = getFullTitle(usages, title, shouldShowMoreSeparator,
-                        visibleNodes.size() - (shouldShowMoreSeparator ? 1 : 0), false);
-                    ((AbstractPopup) popup).setCaption(fullTitle);
                   }
-                }
+                }, project.getDisposed());
               }
-            }, project.getDisposed());
-          }
-        });
+            }
+        );
     Disposer.register(popup, new Disposable() {
       @Override
       public void dispose() {
@@ -612,7 +612,8 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
             });
             cancelAction.run();
           }
-        });
+        }
+    );
   }
 
   private void showDialogAndFindUsages(@NotNull FindUsagesHandler handler,
@@ -741,14 +742,11 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
             popup[0].cancel();
             FindUsagesManager findUsagesManager = ((FindManagerImpl) FindManager.getInstance(
                 usageView.getProject())).getFindUsagesManager();
-            FindUsagesManager.SearchData data = new FindUsagesManager.SearchData();
-            data.myOptions = options;
-            List<SmartPsiElementPointer<PsiElement>> plist = descriptor.getAllElementPointers();
-
-            data.myElements = plist.toArray(new SmartPsiElementPointer[plist.size()]);
-            findUsagesManager.rerunAndRecallFromHistory(data);
+            findUsagesManager.findUsages(handler.getPrimaryElements(),
+                handler.getSecondaryElements(), handler, options, true);
           }
-        });
+        }
+    );
 
     ActionToolbar actionToolbar = ActionManager.getInstance()
         .createActionToolbar(ActionPlaces.USAGE_VIEW_TOOLBAR, toolbar, true);
