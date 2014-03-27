@@ -14,7 +14,7 @@
   ]]></description>
 
   <change-notes><![CDATA[
-    1.0.4: Build using Java 1.7 & support IDEA 13.1
+    1.0.4: Build using Java 1.6 & support IDEA 13.1
     1.0.3: An @Inject constrcutor will take you to @Inject-ion usages<br/>
     1.0.2: Build using Java 1.6. <br/>
     1.0.1: Add support for Qualifiers. <br/>
