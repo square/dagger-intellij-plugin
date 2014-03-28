@@ -1,7 +1,7 @@
 <idea-plugin version="2">
   <id>com.squareup.ideaplugin.dagger</id>
   <name>Dagger Plugin</name>
-  <version>1.0.4</version>
+  <version>1.0.5</version>
   <vendor email="support@squareup.com" url="http://square.github.io">Square, Inc.</vendor>
 
   <description><![CDATA[
@@ -14,6 +14,7 @@
   ]]></description>
 
   <change-notes><![CDATA[
+    1.0.5: Support IDEA 13.1 & AS 0.5.3
     1.0.4: Build using Java 1.6 & support IDEA 13.1
     1.0.3: An @Inject constrcutor will take you to @Inject-ion usages<br/>
     1.0.2: Build using Java 1.6. <br/>
@@ -22,7 +23,7 @@
   ]]></change-notes>
 
   <!-- please see http://confluence.jetbrains.net/display/IDEADEV/Build+Number+Ranges for description -->
-  <idea-version since-build="135.445"/>
+  <idea-version since-build="135.1092050"/>
 
   <application-components>
     <!-- Add your application components here -->
