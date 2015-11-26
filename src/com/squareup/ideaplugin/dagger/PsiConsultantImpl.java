@@ -14,7 +14,11 @@ import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.PsiVariable;
 import com.intellij.psi.search.GlobalSearchScope;
+
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_LAZY;
@@ -156,6 +160,35 @@ public class PsiConsultantImpl {
     }
 
     return wrapperClass;
+  }
+
+  public static boolean hasTypeParameters(PsiElement psiElement, List<PsiType> typeParameters) {
+    List<PsiType> actualTypeParameters = getTypeParameters(psiElement);
+    return actualTypeParameters.equals(typeParameters);
+  }
+
+  public static List<PsiType> getTypeParameters(PsiElement psiElement) {
+    PsiClassType psiClassType = getPsiClassType(psiElement);
+    if (psiClassType == null) {
+      return new ArrayList<PsiType>();
+    }
+
+    if (PsiConsultantImpl.isLazyOrProvider(getClass(psiClassType))) {
+      psiClassType = extractFirstTypeParameter(psiClassType);
+    }
+
+    Collection<PsiType> typeParameters =
+        psiClassType.resolveGenerics().getSubstitutor().getSubstitutionMap().values();
+    return new ArrayList<PsiType>(typeParameters);
+  }
+
+  private static PsiClassType getPsiClassType(PsiElement psiElement) {
+    if (psiElement instanceof PsiVariable) {
+      return (PsiClassType) ((PsiVariable) psiElement).getType();
+    } else if (psiElement instanceof PsiMethod) {
+      return (PsiClassType) ((PsiMethod) psiElement).getReturnType();
+    }
+    return null;
   }
 
   private static boolean isLazyOrProvider(PsiClass psiClass) {

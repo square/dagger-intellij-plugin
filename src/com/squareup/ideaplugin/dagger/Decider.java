@@ -5,9 +5,12 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiParameter;
+import com.intellij.psi.PsiType;
 import com.intellij.usages.Usage;
 import com.intellij.usages.UsageInfo2UsageAdapter;
 import com.intellij.usages.UsageTarget;
+
+import java.util.List;
 import java.util.Set;
 
 import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_INJECT;
@@ -21,10 +24,12 @@ public interface Decider {
   public class ProvidesMethodDecider implements Decider {
     private final PsiClass returnType;
     private final Set<String> qualifierAnnotations;
+    private final List<PsiType> typeParameters;
 
     public ProvidesMethodDecider(PsiMethod psiMethod) {
       this.returnType = PsiConsultantImpl.getReturnClassFromMethod(psiMethod);
       this.qualifierAnnotations = PsiConsultantImpl.getQualifierAnnotations(psiMethod);
+      this.typeParameters = PsiConsultantImpl.getTypeParameters(psiMethod);
     }
 
     @Override public boolean shouldShow(UsageTarget target, Usage usage) {
@@ -33,7 +38,8 @@ public interface Decider {
       PsiField field = PsiConsultantImpl.findField(element);
       if (field != null //
           && PsiConsultantImpl.hasAnnotation(field, CLASS_INJECT) //
-          && PsiConsultantImpl.hasQuailifierAnnotations(field, qualifierAnnotations)) {
+          && PsiConsultantImpl.hasQuailifierAnnotations(field, qualifierAnnotations)
+          && PsiConsultantImpl.hasTypeParameters(field, typeParameters)) {
         return true;
       }
 
@@ -43,7 +49,8 @@ public interface Decider {
         for (PsiParameter parameter : parameters) {
           PsiClass parameterClass = PsiConsultantImpl.checkForLazyOrProvider(parameter);
           if (parameterClass.equals(returnType) && PsiConsultantImpl.hasQuailifierAnnotations(
-              parameter, qualifierAnnotations)) {
+              parameter, qualifierAnnotations)
+              && PsiConsultantImpl.hasTypeParameters(parameter, typeParameters)) {
             return true;
           }
         }
@@ -59,7 +66,8 @@ public interface Decider {
    */
   public class ConstructorParameterInjectDecider extends IsAProviderDecider {
     public ConstructorParameterInjectDecider(PsiParameter psiParameter) {
-      super(PsiConsultantImpl.getQualifierAnnotations(psiParameter));
+      super(PsiConsultantImpl.getQualifierAnnotations(psiParameter),
+          PsiConsultantImpl.getTypeParameters(psiParameter));
     }
   }
 
@@ -69,15 +77,18 @@ public interface Decider {
    */
   public class FieldInjectDecider extends IsAProviderDecider {
     public FieldInjectDecider(PsiField psiField) {
-      super(PsiConsultantImpl.getQualifierAnnotations(psiField));
+      super(PsiConsultantImpl.getQualifierAnnotations(psiField),
+          PsiConsultantImpl.getTypeParameters(psiField));
     }
   }
 
   class IsAProviderDecider implements Decider {
     private final Set<String> qualifierAnnotations;
+    private final List<PsiType> typeParameters;
 
-    public IsAProviderDecider(Set<String> qualifierAnnotations) {
+    public IsAProviderDecider(Set<String> qualifierAnnotations, List<PsiType> typeParameters) {
       this.qualifierAnnotations = qualifierAnnotations;
+      this.typeParameters = typeParameters;
     }
 
     @Override public boolean shouldShow(UsageTarget target, Usage usage) {
@@ -98,7 +109,10 @@ public interface Decider {
           // Right return type.
           && PsiConsultantImpl.getReturnClassFromMethod(psimethod)
           .getName()
-          .equals(target.getName());
+          .equals(target.getName())
+
+          // Right type parameters.
+          && PsiConsultantImpl.hasTypeParameters(psimethod, typeParameters);
     }
   }
 }
