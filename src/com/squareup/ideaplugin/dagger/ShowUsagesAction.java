@@ -74,7 +74,6 @@ import com.intellij.psi.search.PsiElementProcessor;
 import com.intellij.psi.search.SearchScope;
 import com.intellij.ui.ActiveComponent;
 import com.intellij.ui.InplaceButton;
-import com.intellij.ui.JBTableWithHintProvider;
 import com.intellij.ui.ScreenUtil;
 import com.intellij.ui.SpeedSearchBase;
 import com.intellij.ui.SpeedSearchComparator;
@@ -1106,7 +1105,7 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
     return newFileEditor instanceof TextEditor ? ((TextEditor) newFileEditor).getEditor() : null;
   }
 
-  private static class MyTable extends JBTableWithHintProvider implements DataProvider {
+  private static class MyTable extends com.intellij.ui.table.JBTable implements DataProvider {
     @Override
     public boolean getScrollableTracksViewportWidth() {
       return true;
@@ -1123,7 +1122,7 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
       return null;
     }
 
-    @Override @Nullable
+    @Nullable
     protected PsiElement getPsiElementForHint(Object selectedValue) {
       if (selectedValue instanceof UsageNode) {
         final Usage usage = ((UsageNode) selectedValue).getUsage();
