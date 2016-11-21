@@ -19,6 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import static com.intellij.codeHighlighting.Pass.UPDATE_ALL;
 import static com.intellij.openapi.editor.markup.GutterIconRenderer.Alignment.LEFT;
 import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_INJECT;
+import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_PROVIDES;
 
 public class InjectionLineMarkerProvider implements LineMarkerProvider {
   private static final Icon ICON = IconLoader.getIcon("/icons/inject.png");
@@ -39,11 +40,22 @@ public class InjectionLineMarkerProvider implements LineMarkerProvider {
       PsiMethod methodElement = (PsiMethod) element;
 
       // Constructor injection.
-      if (methodElement.isConstructor() && PsiConsultantImpl.hasAnnotation(element, CLASS_INJECT)) {
+      if (methodElement.isConstructor() && PsiConsultantImpl.hasAnnotation(element, CLASS_INJECT) &&
+              methodElement.getParameterList().getParametersCount() > 0) {
         PsiIdentifier nameIdentifier = methodElement.getNameIdentifier();
         if (nameIdentifier != null) {
           return new LineMarkerInfo<PsiElement>(element, nameIdentifier.getTextRange(), ICON,
               UPDATE_ALL, null, new ConstructorInjectToProvidesHandler(), LEFT);
+        }
+      }
+
+      // Method annotated with @Provides and has at least one argument
+      if (!methodElement.isConstructor() && PsiConsultantImpl.hasAnnotation(element, CLASS_PROVIDES) &&
+              methodElement.getParameterList().getParametersCount() > 0) {
+        PsiIdentifier nameIdentifier = methodElement.getNameIdentifier();
+        if (nameIdentifier != null) {
+          return new LineMarkerInfo<PsiElement>(element, nameIdentifier.getTextRange(), ICON,
+                  UPDATE_ALL, null, new ConstructorInjectToProvidesHandler(), LEFT);
         }
       }
 

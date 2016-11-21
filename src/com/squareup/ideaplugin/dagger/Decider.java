@@ -9,7 +9,6 @@ import com.intellij.psi.PsiType;
 import com.intellij.usages.Usage;
 import com.intellij.usages.UsageInfo2UsageAdapter;
 import com.intellij.usages.UsageTarget;
-
 import java.util.List;
 import java.util.Set;
 
@@ -44,9 +43,9 @@ public interface Decider {
       }
 
       PsiMethod method = PsiConsultantImpl.findMethod(element);
-      if (method != null && PsiConsultantImpl.hasAnnotation(method, CLASS_INJECT)) {
-        PsiParameter[] parameters = method.getParameterList().getParameters();
-        for (PsiParameter parameter : parameters) {
+      if (method != null && (PsiConsultantImpl.hasAnnotation(method, CLASS_INJECT)
+              || PsiConsultantImpl.hasAnnotation(method, CLASS_PROVIDES))) {
+        for (PsiParameter parameter : method.getParameterList().getParameters()) {
           PsiClass parameterClass = PsiConsultantImpl.checkForLazyOrProvider(parameter);
           if (parameterClass.equals(returnType) && PsiConsultantImpl.hasQuailifierAnnotations(
               parameter, qualifierAnnotations)
@@ -66,8 +65,7 @@ public interface Decider {
    */
   public class ConstructorParameterInjectDecider extends IsAProviderDecider {
     public ConstructorParameterInjectDecider(PsiParameter psiParameter) {
-      super(PsiConsultantImpl.getQualifierAnnotations(psiParameter),
-          PsiConsultantImpl.getTypeParameters(psiParameter));
+      super(psiParameter);
     }
   }
 
@@ -77,8 +75,7 @@ public interface Decider {
    */
   public class FieldInjectDecider extends IsAProviderDecider {
     public FieldInjectDecider(PsiField psiField) {
-      super(PsiConsultantImpl.getQualifierAnnotations(psiField),
-          PsiConsultantImpl.getTypeParameters(psiField));
+      super(psiField);
     }
   }
 
@@ -86,19 +83,19 @@ public interface Decider {
     private final Set<String> qualifierAnnotations;
     private final List<PsiType> typeParameters;
 
-    public IsAProviderDecider(Set<String> qualifierAnnotations, List<PsiType> typeParameters) {
-      this.qualifierAnnotations = qualifierAnnotations;
-      this.typeParameters = typeParameters;
+    public IsAProviderDecider(PsiElement element) {
+      this.qualifierAnnotations = PsiConsultantImpl.getQualifierAnnotations(element);
+      this.typeParameters = PsiConsultantImpl.getTypeParameters(element);
     }
 
     @Override public boolean shouldShow(UsageTarget target, Usage usage) {
       PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
 
-      // Is it a constructor annotated w/ @Inject?
-      // I don't even know how to get to the constructor!
+      PsiMethod psimethod = PsiConsultantImpl.findMethod(element);
+
+      // For constructors annotated w/ @Inject, this is searched first before committing to the usage search.
 
       // Is it a @Provides method?
-      PsiMethod psimethod = PsiConsultantImpl.findMethod(element);
       return psimethod != null
           // Ensure it has an @Provides.
           && PsiConsultantImpl.hasAnnotation(psimethod, CLASS_PROVIDES)
