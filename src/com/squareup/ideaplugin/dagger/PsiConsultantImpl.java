@@ -7,6 +7,7 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiClassType;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
+import com.intellij.psi.PsiJavaCodeReferenceElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifierList;
 import com.intellij.psi.PsiModifierListOwner;
@@ -107,6 +108,10 @@ public class PsiConsultantImpl {
   }
 
   public static PsiClass getReturnClassFromMethod(PsiMethod psiMethod) {
+    if (psiMethod.isConstructor()) {
+      return psiMethod.getContainingClass();
+    }
+
     PsiClassType returnType = ((PsiClassType) psiMethod.getReturnType());
     if (returnType != null) {
       return returnType.resolve();
