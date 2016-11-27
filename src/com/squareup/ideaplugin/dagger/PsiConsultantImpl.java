@@ -119,30 +119,41 @@ public class PsiConsultantImpl {
     return null;
   }
 
-  public static PsiClass getReturnClassFromMethod(PsiMethod psiMethod) {
+  /**
+   * Return the appropriate return class for a given method element.
+   *
+   * @param psiMethod the method to get the return class from.
+   * @param expandType set this to true if return types annotated with @Provides(type=?)
+   * should be expanded to the appropriate collection type.
+   * @return the appropriate return class for the provided method element.
+   */
+  public static PsiClass getReturnClassFromMethod(PsiMethod psiMethod, boolean expandType) {
     if (psiMethod.isConstructor()) {
       return psiMethod.getContainingClass();
     }
 
     PsiClassType returnType = ((PsiClassType) psiMethod.getReturnType());
     if (returnType != null) {
-
       // Check if has @Provides annotation and specified type
-      PsiAnnotationMemberValue attribValue = findTypeAttributeOfProvidesAnnotation(psiMethod);
-      if (attribValue != null) {
-        if (attribValue.textMatches(SET_TYPE)) {
-          String typeName = "java.util.Set<" + returnType.getCanonicalText() + ">";
-          returnType = ((PsiClassType) PsiElementFactory.SERVICE.getInstance(psiMethod.getProject())
-              .createTypeFromText(typeName, psiMethod));
-        } else if (attribValue.textMatches(MAP_TYPE)) {
-          // TODO(radford): Supporting map will require fetching the key type and also validating
-          // the qualifier for the provided key.
-          //
-          // String typeName = "java.util.Map<String, " + returnType.getCanonicalText() + ">";
-          // returnType = ((PsiClassType) PsiElementFactory.SERVICE.getInstance(psiMethod.getProject())
-          //    .createTypeFromText(typeName, psiMethod));
+      if (expandType) {
+        PsiAnnotationMemberValue attribValue = findTypeAttributeOfProvidesAnnotation(psiMethod);
+        if (attribValue != null) {
+          if (attribValue.textMatches(SET_TYPE)) {
+            String typeName = "java.util.Set<" + returnType.getCanonicalText() + ">";
+            returnType =
+                ((PsiClassType) PsiElementFactory.SERVICE.getInstance(psiMethod.getProject())
+                    .createTypeFromText(typeName, psiMethod));
+          } else if (attribValue.textMatches(MAP_TYPE)) {
+            // TODO(radford): Supporting map will require fetching the key type and also validating
+            // the qualifier for the provided key.
+            //
+            // String typeName = "java.util.Map<String, " + returnType.getCanonicalText() + ">";
+            // returnType = ((PsiClassType) PsiElementFactory.SERVICE.getInstance(psiMethod.getProject())
+            //    .createTypeFromText(typeName, psiMethod));
+          }
         }
       }
+
       return returnType.resolve();
     }
     return null;

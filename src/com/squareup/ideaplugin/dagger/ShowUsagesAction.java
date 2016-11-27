@@ -104,6 +104,7 @@ import com.intellij.usages.rules.UsageFilteringRuleProvider;
 import com.intellij.util.Alarm;
 import com.intellij.util.PlatformIcons;
 import com.intellij.util.Processor;
+import com.intellij.util.concurrency.FutureResult;
 import com.intellij.util.messages.MessageBusConnection;
 import com.intellij.util.ui.AsyncProcessIcon;
 import com.intellij.util.ui.ColumnInfo;
@@ -124,6 +125,8 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -135,6 +138,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class ShowUsagesAction extends AnAction implements PopupAction {
+  public interface Listener {
+    void onFinished(boolean hasResults);
+
+    // NULL listener that does nothing.
+    Listener NULL = new Listener() {
+      @Override public void onFinished(boolean hasResults) {}
+    };
+  }
+
   private final boolean showSettingsDialogBefore;
   private static final int USAGES_PAGE_SIZE = 100;
 
@@ -176,12 +188,15 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
   @NotNull private final UsageViewSettings myUsageViewSettings;
   @Nullable private Runnable mySearchEverywhereRunnable;
   private Decider decider;
+  private Listener listener;
+
 
   // used from plugin.xml
   @SuppressWarnings({ "UnusedDeclaration" })
   public ShowUsagesAction(Decider decider) {
     this(false);
     this.decider = decider;
+    listener = Listener.NULL;
   }
 
   private ShowUsagesAction(boolean showDialogBefore) {
@@ -196,6 +211,10 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
     myUsageViewSettings.GROUP_BY_PACKAGE = false;
     myUsageViewSettings.GROUP_BY_USAGE_TYPE = false;
     myUsageViewSettings.GROUP_BY_SCOPE = false;
+  }
+
+  public void setListener(Listener listener) {
+    this.listener = listener;
   }
 
   @Override
@@ -475,6 +494,7 @@ public class ShowUsagesAction extends AnAction implements PopupAction {
                             visibleNodes.size() - (shouldShowMoreSeparator ? 1 : 0), false);
                         ((AbstractPopup) popup).setCaption(fullTitle);
                       }
+                      listener.onFinished(!visibleNodes.isEmpty());
                     }
                   }
                 }, project.getDisposed());
