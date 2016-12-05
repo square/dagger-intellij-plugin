@@ -20,7 +20,7 @@ public class ProvidesToInjectHandler implements GutterIconNavigationHandler<PsiE
     }
 
     PsiMethod psiMethod = (PsiMethod) psiElement;
-    PsiClass psiClass = PsiConsultantImpl.getReturnClassFromMethod(psiMethod);
+    PsiClass psiClass = PsiConsultantImpl.getReturnClassFromMethod(psiMethod, true);
 
     new ShowUsagesAction(new Decider.ProvidesMethodDecider(psiMethod)).startFindUsages(psiClass,
         new RelativePoint(mouseEvent), PsiUtilBase.findEditor(psiClass), MAX_USAGES);

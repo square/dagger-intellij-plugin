@@ -3,11 +3,12 @@ package com.squareup.ideaplugin.dagger;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiAnnotation;
+import com.intellij.psi.PsiAnnotationMemberValue;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiClassType;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiElementFactory;
 import com.intellij.psi.PsiField;
-import com.intellij.psi.PsiJavaCodeReferenceElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifierList;
 import com.intellij.psi.PsiModifierListOwner;
@@ -15,16 +16,19 @@ import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.PsiVariable;
 import com.intellij.psi.search.GlobalSearchScope;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static com.squareup.ideaplugin.dagger.DaggerConstants.ATTRIBUTE_TYPE;
 import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_LAZY;
 import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_PROVIDER;
+import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_PROVIDES;
 import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_QUALIFIER;
+import static com.squareup.ideaplugin.dagger.DaggerConstants.MAP_TYPE;
+import static com.squareup.ideaplugin.dagger.DaggerConstants.SET_TYPE;
 
 public class PsiConsultantImpl {
 
@@ -45,7 +49,6 @@ public class PsiConsultantImpl {
         }
       }
     }
-
     return null;
   }
 
@@ -107,13 +110,50 @@ public class PsiConsultantImpl {
     return null;
   }
 
-  public static PsiClass getReturnClassFromMethod(PsiMethod psiMethod) {
+  public static PsiAnnotationMemberValue findTypeAttributeOfProvidesAnnotation(
+      PsiElement element ) {
+    PsiAnnotation annotation = findAnnotation(element, CLASS_PROVIDES);
+    if (annotation != null) {
+      return annotation.findAttributeValue(ATTRIBUTE_TYPE);
+    }
+    return null;
+  }
+
+  /**
+   * Return the appropriate return class for a given method element.
+   *
+   * @param psiMethod the method to get the return class from.
+   * @param expandType set this to true if return types annotated with @Provides(type=?)
+   * should be expanded to the appropriate collection type.
+   * @return the appropriate return class for the provided method element.
+   */
+  public static PsiClass getReturnClassFromMethod(PsiMethod psiMethod, boolean expandType) {
     if (psiMethod.isConstructor()) {
       return psiMethod.getContainingClass();
     }
 
     PsiClassType returnType = ((PsiClassType) psiMethod.getReturnType());
     if (returnType != null) {
+      // Check if has @Provides annotation and specified type
+      if (expandType) {
+        PsiAnnotationMemberValue attribValue = findTypeAttributeOfProvidesAnnotation(psiMethod);
+        if (attribValue != null) {
+          if (attribValue.textMatches(SET_TYPE)) {
+            String typeName = "java.util.Set<" + returnType.getCanonicalText() + ">";
+            returnType =
+                ((PsiClassType) PsiElementFactory.SERVICE.getInstance(psiMethod.getProject())
+                    .createTypeFromText(typeName, psiMethod));
+          } else if (attribValue.textMatches(MAP_TYPE)) {
+            // TODO(radford): Supporting map will require fetching the key type and also validating
+            // the qualifier for the provided key.
+            //
+            // String typeName = "java.util.Map<String, " + returnType.getCanonicalText() + ">";
+            // returnType = ((PsiClassType) PsiElementFactory.SERVICE.getInstance(psiMethod.getProject())
+            //    .createTypeFromText(typeName, psiMethod));
+          }
+        }
+      }
+
       return returnType.resolve();
     }
     return null;
@@ -176,6 +216,24 @@ public class PsiConsultantImpl {
     PsiClassType psiClassType = getPsiClassType(psiElement);
     if (psiClassType == null) {
       return new ArrayList<PsiType>();
+    }
+
+    // Check if @Provides(type=?) pattern (annotation with specified type).
+    PsiAnnotationMemberValue attribValue = findTypeAttributeOfProvidesAnnotation(psiElement);
+    if (attribValue != null) {
+      if (attribValue.textMatches(SET_TYPE)) {
+        // type = SET. Transform the type parameter to the element type.
+        ArrayList<PsiType> result = new ArrayList<PsiType>();
+        result.add(psiClassType);
+        return result;
+      } else if (attribValue.textMatches(MAP_TYPE)) {
+        // TODO(radford): Need to figure out key type for maps.
+        // type = SET or type = MAP. Transform the type parameter to the element type.
+        //ArrayList<PsiType> result = new ArrayList<PsiType>();
+        //result.add(psiKeyType):
+        //result.add(psiClassType);
+        //return result;
+      }
     }
 
     if (PsiConsultantImpl.isLazyOrProvider(getClass(psiClassType))) {

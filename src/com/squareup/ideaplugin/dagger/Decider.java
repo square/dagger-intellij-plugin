@@ -1,5 +1,6 @@
 package com.squareup.ideaplugin.dagger;
 
+import com.intellij.psi.PsiAnnotationMemberValue;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
@@ -14,6 +15,7 @@ import java.util.Set;
 
 import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_INJECT;
 import static com.squareup.ideaplugin.dagger.DaggerConstants.CLASS_PROVIDES;
+import static com.squareup.ideaplugin.dagger.DaggerConstants.SET_TYPE;
 
 public interface Decider {
 
@@ -26,7 +28,7 @@ public interface Decider {
     private final List<PsiType> typeParameters;
 
     public ProvidesMethodDecider(PsiMethod psiMethod) {
-      this.returnType = PsiConsultantImpl.getReturnClassFromMethod(psiMethod);
+      this.returnType = PsiConsultantImpl.getReturnClassFromMethod(psiMethod, true);
       this.qualifierAnnotations = PsiConsultantImpl.getQualifierAnnotations(psiMethod);
       this.typeParameters = PsiConsultantImpl.getTypeParameters(psiMethod);
     }
@@ -69,6 +71,36 @@ public interface Decider {
     }
   }
 
+  public class CollectionElementParameterInjectDecider extends IsAProviderDecider {
+    public CollectionElementParameterInjectDecider(PsiElement psiParameter) {
+      super(psiParameter);
+    }
+
+    @Override public boolean shouldShow(UsageTarget target, Usage usage) {
+      PsiElement element = ((UsageInfo2UsageAdapter) usage).getElement();
+      PsiMethod psimethod = PsiConsultantImpl.findMethod(element);
+
+      PsiAnnotationMemberValue attribValue = PsiConsultantImpl
+          .findTypeAttributeOfProvidesAnnotation(psimethod);
+
+      // Is it a @Provides method?
+      return psimethod != null
+          // Ensure it has an @Provides.
+          && PsiConsultantImpl.hasAnnotation(psimethod, CLASS_PROVIDES)
+          // Check for Qualifier annotations.
+          && PsiConsultantImpl.hasQuailifierAnnotations(psimethod, qualifierAnnotations)
+          // Right return type.
+          && PsiConsultantImpl.getReturnClassFromMethod(psimethod, false)
+          .getName()
+          .equals(target.getName())
+          // Right type parameters.
+          && PsiConsultantImpl.hasTypeParameters(psimethod, typeParameters)
+          // @Provides(type=SET)
+          && attribValue != null
+          && attribValue.textMatches(SET_TYPE);
+    }
+  }
+
   /**
    * Construct with a PsiField annotated w/ @Inject and then use this to ensure the
    * usage fits.
@@ -80,8 +112,8 @@ public interface Decider {
   }
 
   class IsAProviderDecider implements Decider {
-    private final Set<String> qualifierAnnotations;
-    private final List<PsiType> typeParameters;
+    protected final Set<String> qualifierAnnotations;
+    protected final List<PsiType> typeParameters;
 
     public IsAProviderDecider(PsiElement element) {
       this.qualifierAnnotations = PsiConsultantImpl.getQualifierAnnotations(element);
@@ -104,7 +136,7 @@ public interface Decider {
           && PsiConsultantImpl.hasQuailifierAnnotations(psimethod, qualifierAnnotations)
 
           // Right return type.
-          && PsiConsultantImpl.getReturnClassFromMethod(psimethod)
+          && PsiConsultantImpl.getReturnClassFromMethod(psimethod, false)
           .getName()
           .equals(target.getName())
 
