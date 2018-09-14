@@ -1,0 +1,20 @@
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'kotlin'
+
+sourceCompatibility = JavaVersion.VERSION_1_7
+targetCompatibility = JavaVersion.VERSION_1_7
+
+intellij {
+  updateSinceUntilBuild false
+  version "IC-${versions.idea}"
+  pluginName = 'SQLDelight'
+  plugins = [
+      "org.jetbrains.kotlin:${versions.kotlin}-release-IJ${versions.idea}-1",
+  ]
+  // Uncomment to test against Android Studio
+  // intellij.alternativeIdePath = '/Applications/Android Studio.app'
+}
+
+dependencies {
+  implementation deps.kotlin.stdlib
+}

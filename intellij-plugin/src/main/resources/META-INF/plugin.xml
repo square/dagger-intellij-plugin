@@ -1,0 +1,13 @@
+<idea-plugin version="2">
+  <id>com.squareup.ideaplugin.dagger</id>
+  <name>Dagger Plugin</name>
+  <version>2.0.0</version>
+  <vendor email="support@squareup.com" url="http://square.github.io">Square, Inc.</vendor>
+
+  <!-- Plugin's project components -->
+  <project-components>
+    <component>
+      <implementation-class>com.squareup.idea.dagger.DaggerProjectComponent</implementation-class>
+    </component>
+  </project-components>
+</idea-plugin>

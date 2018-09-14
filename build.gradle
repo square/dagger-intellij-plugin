@@ -1,0 +1,36 @@
+buildscript {
+  ext.versions = [
+      kotlin: '1.2.70',
+      idea: '2018.2',
+  ]
+
+  ext.deps = [
+      plugins: [
+          intellij: "gradle.plugin.org.jetbrains.intellij.plugins:gradle-intellij-plugin:0.3.9",
+          kotlin: "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}",
+      ],
+      kotlin: [
+          stdlib: "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin}",
+      ],
+  ]
+}
+
+subprojects {
+  buildscript {
+    repositories {
+      mavenCentral()
+      maven {
+        url "https://plugins.gradle.org/m2/"
+      }
+    }
+
+    dependencies {
+      classpath deps.plugins.kotlin
+      classpath deps.plugins.intellij
+    }
+  }
+
+  repositories {
+    mavenCentral()
+  }
+}

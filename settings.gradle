@@ -1,0 +1,3 @@
+rootProject.name = 'Dagger Intellij Plugin'
+
+include ':intellij-plugin'
